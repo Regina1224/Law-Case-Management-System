@@ -1,3 +1,4 @@
+using LawFirm.Api.Middleware;
 using LawFirm.Infrastructure.Data;
 using LawFirm.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseMiddleware<ExceptionMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
