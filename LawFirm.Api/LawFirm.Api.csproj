@@ -17,12 +17,17 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.13.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../LawFirm.Application/LawFirm.Application.csproj" />
     <ProjectReference Include="../LawFirm.Infrastructure/LawFirm.Infrastructure.csproj" />
     <ProjectReference Include="../LawFirm.Shared/LawFirm.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers/" />
   </ItemGroup>
 
 </Project>
