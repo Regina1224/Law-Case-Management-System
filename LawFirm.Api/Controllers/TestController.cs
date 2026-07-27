@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using LawFirm.Shared.Models;
 
 namespace LawFirm.Api.Controllers
 {
@@ -9,9 +9,10 @@ namespace LawFirm.Api.Controllers
     public class TestController : ControllerBase
     {
         [HttpGet("public")]
-        public IActionResult GetPublic()
+        public ActionResult<ApiResponse<string>> GetPublic()
         {
-            return Ok(new {message = "This is public endpoint, no need login"});
+            var data = "This is public endpoint, no need login";
+            return Ok(ApiResponse<string>.Ok(data));
         }
 
         [HttpGet("protected")]
@@ -19,7 +20,8 @@ namespace LawFirm.Api.Controllers
         public IActionResult GetProtected()
         {
             var username = User.Identity?.Name ?? "Unknown";
-            return Ok(new {message = $"Hello {username}, you have successfully passed the verification! "});
+            var data = $"Hello {username}, you have successfully passed the verification!";
+            return Ok(ApiResponse<string>.Ok(data));
         }
 
 
