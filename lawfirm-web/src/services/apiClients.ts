@@ -5,7 +5,7 @@ import { msalConfig, apiRequest } from '../app/msalConfig';
 const msalInstance = new PublicClientApplication(msalConfig);
 
 const apiClient = axios.create({
-    baseURL: 'https://localhost:7193/api',
+    baseURL: 'http://localhost:5241/api',
     headers: {
         'Content-Type': 'application/json',
     },

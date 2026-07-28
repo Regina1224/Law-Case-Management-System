@@ -8,7 +8,7 @@ namespace LawFirm.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize]
+    [Authorize]
     public class PracticeAreasController : ControllerBase
     {
         private readonly IPracticeAreaService _practiceAreaService;
