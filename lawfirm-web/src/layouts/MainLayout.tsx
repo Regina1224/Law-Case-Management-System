@@ -1,10 +1,12 @@
 import { Outlet, Link } from "react-router-dom";
+import AuthButton from "../components/AuthButton";
 
 const MainLayout = () => {
   return (
     <div>
       {/* Header */}
-      <h1>User information</h1>
+      <AuthButton />
+
 
       {/* Nav */}
       <Link to="/clients">Clients</Link>
