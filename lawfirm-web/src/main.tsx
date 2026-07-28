@@ -3,9 +3,17 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import { RouterProvider } from 'react-router-dom'
 import router from './app/router.tsx'
+import { PublicClientApplication } from '@azure/msal-browser'
+import { MsalProvider } from '@azure/msal-react'
+import { msalConfig } from './app/msalConfig.ts'
+
+const msalInstance = new PublicClientApplication(msalConfig)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <MsalProvider instance={msalInstance}>
+      <RouterProvider router={router} />
+    </MsalProvider>
+    
   </StrictMode>,
 )

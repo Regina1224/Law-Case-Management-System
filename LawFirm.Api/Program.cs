@@ -1,5 +1,9 @@
 using LawFirm.Api.Middleware;
+using LawFirm.Application.Services;
+using LawFirm.Application.Services.Interfaces;
 using LawFirm.Infrastructure.Data;
+using LawFirm.Infrastructure.Repositories;
+using LawFirm.Infrastructure.Repositories.Interfaces;
 using LawFirm.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
@@ -22,6 +26,9 @@ builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration)
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
+// Reference Data
+builder.Services.AddScoped<IPracticeAreaRepository, PracticeAreaRepository>();
+builder.Services.AddScoped<IPracticeAreaService, PracticeAreaService>();
 
 var app = builder.Build();
 
