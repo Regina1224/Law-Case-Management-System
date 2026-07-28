@@ -1,8 +1,6 @@
 import axios from 'axios';
-import { PublicClientApplication } from '@azure/msal-browser';
-import { msalConfig, apiRequest } from '../app/msalConfig';
-
-const msalInstance = new PublicClientApplication(msalConfig);
+import { apiRequest } from '../app/msalConfig';
+import { msalInstance } from '../app/msalInstance';
 
 const apiClient = axios.create({
     baseURL: 'http://localhost:5241/api',
