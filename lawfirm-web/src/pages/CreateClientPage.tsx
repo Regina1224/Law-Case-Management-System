@@ -6,7 +6,7 @@ const CreateClientPage = () => {
   const navigate = useNavigate();
 
   const [clientType, setClientType] = useState("Individual");
-  const [status, setStatus] = useState("Active Client");
+  const status = "Active Client";
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [organizationName, setOrganizationName] = useState("");
