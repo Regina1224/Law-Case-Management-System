@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getClients, type ClientListItem } from "../services/clientService";
+import { Link } from "react-router-dom";
 
 const ClientsPage = () => {
   const [clients, setClients] = useState<ClientListItem[]>([]);
@@ -28,6 +29,7 @@ const ClientsPage = () => {
   return (
     <div>
       <h1>Clients</h1>
+      <Link to="/clients/new">Create Client</Link>
       <p>Total: {totalCount}</p>
 
       <table>

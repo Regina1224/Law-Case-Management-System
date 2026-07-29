@@ -9,7 +9,7 @@ namespace LawFirm.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class ClientsController : ControllerBase
     {
         private readonly IClientService _clientService;
@@ -31,6 +31,13 @@ namespace LawFirm.Api.Controllers
 
             return Ok(ApiResponse<PagedResultDto<ClientListItemDto>>.Ok(result));
             
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateClient([FromBody] CreateClientDto dto)
+        {
+            var result = await _clientService.CreateClientAsync(dto);
+            return Ok(ApiResponse<ClientListItemDto>.Ok(result));
         }
     }
 }

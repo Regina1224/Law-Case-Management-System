@@ -26,7 +26,37 @@ export interface GetClientsParams {
   pageSize?: number;
 }
 
-export const getClients = async (params: GetClientsParams): Promise<PagedResult<ClientListItem>> => {
-  const response = await apiClient.get("/clients", {params});
+export interface CreateClientData {
+  clientType: string;
+  status: string;
+  firstName?: string;
+  lastName?: string;
+  preferredName?: string;
+  dateOfBirth?: string;
+  organizationName?: string;
+  tradingName?: string;
+  abnAcn?: string;
+  email?: string;
+  phone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  internalNotesSummary?: string;
+}
+
+export const getClients = async (
+  params: GetClientsParams,
+): Promise<PagedResult<ClientListItem>> => {
+  const response = await apiClient.get("/clients", { params });
+  return response.data.data;
+};
+
+export const createClient = async (
+  data: CreateClientData,
+): Promise<ClientListItem> => {
+  const response = await apiClient.post("/clients", data);
   return response.data.data;
 };
