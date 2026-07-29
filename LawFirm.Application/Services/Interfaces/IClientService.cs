@@ -8,4 +8,6 @@ public interface IClientService
     Task<PagedResultDto<ClientListItemDto>> GetClientsAsync(
         string? keyword, string? clientType, string? status, int page, int pageSize);
 
+    Task<ClientListItemDto> CreateClientAsync(CreateClientDto dto);
+
 }

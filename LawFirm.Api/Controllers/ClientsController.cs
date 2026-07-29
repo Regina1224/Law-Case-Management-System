@@ -32,5 +32,12 @@ namespace LawFirm.Api.Controllers
             return Ok(ApiResponse<PagedResultDto<ClientListItemDto>>.Ok(result));
             
         }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateClient([FromBody] CreateClientDto dto)
+        {
+            var result = await _clientService.CreateClientAsync(dto);
+            return Ok(ApiResponse<ClientListItemDto>.Ok(result));
+        }
     }
 }

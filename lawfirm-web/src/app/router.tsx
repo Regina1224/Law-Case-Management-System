@@ -5,6 +5,7 @@ import ClientsPage from "../pages/ClientsPage"
 import IntakesPage from "../pages/IntakesPage"
 import MattersPage from "../pages/MattersPage"
 import AdminPage from "../pages/AdminPage"
+import CreateClientPage from "../pages/CreateClientPage"
 
 
 const router = createBrowserRouter([
@@ -14,6 +15,7 @@ const router = createBrowserRouter([
         children: [
             {index: true, element: <HomePage />},
             {path: 'clients', element: <ClientsPage />},
+            {path: 'clients/new', element: <CreateClientPage />},
             {path: 'intakes', element: <IntakesPage />},
             {path: 'matters', element: <MattersPage />},
             {path: 'admin', element: <AdminPage />},

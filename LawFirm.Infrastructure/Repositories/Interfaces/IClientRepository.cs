@@ -13,5 +13,6 @@ public interface IClientRepository
     );
     Task<Client?> GetByIdAsync(int id);
     Task<Client> AddAsync(Client client);
+    Task<int> GetClientCountAsync();
 
 }
