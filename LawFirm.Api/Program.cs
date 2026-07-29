@@ -38,6 +38,9 @@ builder.Services.AddCors(options =>
 // Reference Data
 builder.Services.AddScoped<IPracticeAreaRepository, PracticeAreaRepository>();
 builder.Services.AddScoped<IPracticeAreaService, PracticeAreaService>();
+// Client
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<IClientService, ClientService>();
 
 var app = builder.Build();
 
