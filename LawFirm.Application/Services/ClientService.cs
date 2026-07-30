@@ -118,16 +118,12 @@ public class ClientService : IClientService
     {
         var client = await _clientRepository.GetByIdAsync(id);
 
-        // TODO 1: 如果 client 是 null（说明数据库里没有这个ClientId），
-        //   抛出 KeyNotFoundException，消息比如 $"Client with id {id} was not found."
         if (client == null)
         {
             throw new KeyNotFoundException($"Client with id {id} was not found.");
         }
 
-        // TODO 2: 把 client（非null的情况）转换成 ClientDetailDto 并返回
-        //   跟你在GetClientsAsync/CreateClientAsync里写过的DTO转换逻辑是同一套思路
-        //   记得ClientName拼接规则一样：Individual用FirstName+LastName，否则用OrganizationName
+
         return new ClientDetailDto
         {
             ClientId = client.ClientId,
@@ -154,4 +150,77 @@ public class ClientService : IClientService
         };
     }
 
+    public async Task<ClientDetailDto> UpdateClientAsync(int id, UpdateClientDto dto)
+    {
+        var client = await _clientRepository.GetByIdAsync(id);
+
+        if (client == null)
+        {
+            throw new KeyNotFoundException($"Client with id {id} was not found.");
+        }
+
+        // 第一步：校验（跟Corporate/Individual都无关，走完就结束）
+        if (client.ClientType == "Individual")
+        {
+            if (string.IsNullOrEmpty(dto.FirstName) || string.IsNullOrEmpty(dto.LastName))
+            {
+                throw new ArgumentException("First name and last name are required for individual client.");
+            }
+        }
+        else if (client.ClientType == "Corporate")
+        {
+            if (string.IsNullOrEmpty(dto.OrganizationName))
+            {
+                throw new ArgumentException("Organization name is required for corporate client.");
+            }
+        }
+
+
+        client.Status = dto.Status;
+        client.FirstName = dto.FirstName;
+        client.LastName = dto.LastName;
+        client.PreferredName = dto.PreferredName;
+        client.DateOfBirth = dto.DateOfBirth;
+        client.OrganizationName = dto.OrganizationName;
+        client.TradingName = dto.TradingName;
+        client.AbnAcn = dto.AbnAcn;
+        client.Email = dto.Email;
+        client.Phone = dto.Phone;
+        client.AddressLine1 = dto.AddressLine1;
+        client.AddressLine2 = dto.AddressLine2;
+        client.City = dto.City;
+        client.State = dto.State;
+        client.Postcode = dto.Postcode;
+        client.Country = dto.Country;
+        client.InternalNotesSummary = dto.InternalNotesSummary;
+        client.UpdatedAt = DateTime.UtcNow;
+
+        var updatedClient = await _clientRepository.UpdateAsync(client);
+
+        return new ClientDetailDto
+        {
+            ClientId = updatedClient!.ClientId,
+            ClientCode = updatedClient.ClientCode,
+            ClientName = updatedClient.ClientType == "Individual"
+            ? $"{updatedClient.FirstName} {updatedClient.LastName}"
+            : (updatedClient.OrganizationName ?? ""),
+            ClientType = updatedClient.ClientType,
+            Status = updatedClient.Status,
+            FirstName = updatedClient.FirstName,
+            LastName = updatedClient.LastName,
+            OrganizationName = updatedClient.OrganizationName,
+            Email = updatedClient.Email,
+            Phone = updatedClient.Phone,
+            AddressLine1 = updatedClient.AddressLine1,
+            AddressLine2 = updatedClient.AddressLine2,
+            City = updatedClient.City,
+            State = updatedClient.State,
+            Postcode = updatedClient.Postcode,
+            Country = updatedClient.Country,
+            InternalNotesSummary = updatedClient.InternalNotesSummary,
+            CreatedAt = updatedClient.CreatedAt
+        };
+    }
 }
+
+

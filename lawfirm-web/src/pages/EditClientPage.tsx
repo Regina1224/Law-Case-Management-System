@@ -1,19 +1,42 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createClient } from "../services/clientService";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { getClientById, updateClient } from "../services/clientService";
 
-const CreateClientPage = () => {
+const EditClientPage = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  const [clientType, setClientType] = useState("Individual");
-  const status = "Active Client";
+  const [clientType, setClientType] = useState("");
+  const [status, setStatus] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [organizationName, setOrganizationName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchClient = async () => {
+      try {
+        const result = await getClientById(Number(id));
+        setClientType(result.clientType);
+        setStatus(result.status);
+        setFirstName(result.firstName ?? "");
+        setLastName(result.lastName ?? "");
+        setOrganizationName(result.organizationName ?? "");
+        setEmail(result.email ?? "");
+        setPhone(result.phone ?? "");
+      } catch {
+        setError("Failed to load client details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchClient();
+  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +44,7 @@ const CreateClientPage = () => {
     setError(null);
 
     try {
-      await createClient({
-        clientType,
+      await updateClient(Number(id), {
         status,
         firstName: clientType === "Individual" ? firstName : undefined,
         lastName: clientType === "Individual" ? lastName : undefined,
@@ -31,30 +53,25 @@ const CreateClientPage = () => {
         email,
         phone,
       });
-
-      navigate("/clients");
+      navigate(`/clients/${id}`);
     } catch {
-      setError("Failed to create client. Please check your input.");
+      setError("Failed to update client.");
     } finally {
       setSubmitting(false);
     }
   };
 
+  if (loading) return <p>Loading...</p>;
+
   return (
     <div>
-      <h1>Create Client</h1>
+      <h1>Edit Client</h1>
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <form onSubmit={handleSubmit}>
         <div>
-          <label>Client Type</label>
-          <select
-            value={clientType}
-            onChange={(e) => setClientType(e.target.value)}
-          >
-            <option value="Individual">Individual</option>
-            <option value="Corporate">Corporate</option>
-          </select>
+          <label>Client Type (cannot be changed)</label>
+          <input value={clientType} disabled />
         </div>
 
         {clientType === "Individual" ? (
@@ -91,11 +108,11 @@ const CreateClientPage = () => {
         </div>
 
         <button type="submit" disabled={submitting}>
-          {submitting ? "Creating..." : "Create Client"}
+          {submitting ? "Saving..." : "Save Changes"}
         </button>
       </form>
     </div>
   );
 };
 
-export default CreateClientPage;
+export default EditClientPage;

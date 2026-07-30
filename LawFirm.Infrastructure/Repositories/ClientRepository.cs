@@ -76,5 +76,12 @@ namespace LawFirm.Infrastructure.Repositories
         {
             return await _dbContext.Clients.CountAsync();
         }
+
+        public async Task<Client?> UpdateAsync(Client client)
+        {
+            _dbContext.Clients.Update(client);
+            await _dbContext.SaveChangesAsync();
+            return client;
+        }
     }
 }
