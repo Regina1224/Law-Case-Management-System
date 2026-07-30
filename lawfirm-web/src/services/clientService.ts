@@ -47,7 +47,6 @@ export interface CreateClientData {
   internalNotesSummary?: string;
 }
 
-
 export interface ClientDetail {
   clientId: number;
   clientCode: string;
@@ -69,6 +68,26 @@ export interface ClientDetail {
   createdAt: string;
 }
 
+export interface UpdateClientData {
+  status: string;
+  firstName?: string;
+  lastName?: string;
+  preferredName?: string;
+  dateOfBirth?: string;
+  organizationName?: string;
+  tradingName?: string;
+  abnAcn?: string;
+  email?: string;
+  phone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  internalNotesSummary?: string;
+}
+
 export const getClients = async (
   params: GetClientsParams,
 ): Promise<PagedResult<ClientListItem>> => {
@@ -83,7 +102,15 @@ export const createClient = async (
   return response.data.data;
 };
 
-export const getClientById = async (id : number): Promise<ClientDetail> => {
-    const response = await apiClient.get(`/clients/${id}`);
-    return response.data.data;
+export const getClientById = async (id: number): Promise<ClientDetail> => {
+  const response = await apiClient.get(`/clients/${id}`);
+  return response.data.data;
+};
+
+export const updateClient = async (
+  id: number,
+  data: UpdateClientData,
+): Promise<ClientDetail> => {
+  const response = await apiClient.put(`/clients/${id}`, data);
+  return response.data.data;
 };

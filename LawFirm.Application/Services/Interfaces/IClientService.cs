@@ -12,5 +12,8 @@ public interface IClientService
 
     Task<ClientDetailDto> GetClientByIdAsync(int id);
 
+    Task<ClientDetailDto> UpdateClientAsync(int id, UpdateClientDto dto);
+    
+
 
 }
