@@ -47,7 +47,7 @@ const ClientsPage = () => {
         <tbody>
           {clients.map((client) => (
             <tr key={client.clientId}>
-              <td>{client.clientCode}</td>
+              <td><Link to={`/clients/${client.clientId}`}>{client.clientCode}</Link></td>
               <td>{client.clientName}</td>
               <td>{client.clientType}</td>
               <td>{client.email}</td>

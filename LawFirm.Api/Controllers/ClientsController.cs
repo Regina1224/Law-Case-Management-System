@@ -9,7 +9,7 @@ namespace LawFirm.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class ClientsController : ControllerBase
     {
         private readonly IClientService _clientService;
@@ -38,6 +38,13 @@ namespace LawFirm.Api.Controllers
         {
             var result = await _clientService.CreateClientAsync(dto);
             return Ok(ApiResponse<ClientListItemDto>.Ok(result));
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetClientById(int id)
+        {
+            var result = await _clientService.GetClientByIdAsync(id);
+            return Ok(ApiResponse<ClientDetailDto>.Ok(result));
         }
     }
 }

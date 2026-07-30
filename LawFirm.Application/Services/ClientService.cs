@@ -114,4 +114,44 @@ public class ClientService : IClientService
 
     }
 
+    public async Task<ClientDetailDto> GetClientByIdAsync(int id)
+    {
+        var client = await _clientRepository.GetByIdAsync(id);
+
+        // TODO 1: 如果 client 是 null（说明数据库里没有这个ClientId），
+        //   抛出 KeyNotFoundException，消息比如 $"Client with id {id} was not found."
+        if (client == null)
+        {
+            throw new KeyNotFoundException($"Client with id {id} was not found.");
+        }
+
+        // TODO 2: 把 client（非null的情况）转换成 ClientDetailDto 并返回
+        //   跟你在GetClientsAsync/CreateClientAsync里写过的DTO转换逻辑是同一套思路
+        //   记得ClientName拼接规则一样：Individual用FirstName+LastName，否则用OrganizationName
+        return new ClientDetailDto
+        {
+            ClientId = client.ClientId,
+            ClientCode = client.ClientCode,
+            ClientName = client.ClientType == "Individual"
+        ? $"{client.FirstName} {client.LastName}"
+        : (client.OrganizationName ?? ""),
+            ClientType = client.ClientType,
+            Status = client.Status,
+            FirstName = client.FirstName,
+            LastName = client.LastName,
+            OrganizationName = client.OrganizationName,
+            Email = client.Email,
+            Phone = client.Phone,
+            AddressLine1 = client.AddressLine1,
+            AddressLine2 = client.AddressLine2,
+            City = client.City,
+            State = client.State,
+            Postcode = client.Postcode,
+            Country = client.Country,
+            InternalNotesSummary = client.InternalNotesSummary,
+            CreatedAt = client.CreatedAt
+
+        };
+    }
+
 }
