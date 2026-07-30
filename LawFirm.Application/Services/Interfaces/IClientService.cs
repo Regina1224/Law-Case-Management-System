@@ -10,4 +10,7 @@ public interface IClientService
 
     Task<ClientListItemDto> CreateClientAsync(CreateClientDto dto);
 
+    Task<ClientDetailDto> GetClientByIdAsync(int id);
+
+
 }

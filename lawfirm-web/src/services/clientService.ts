@@ -47,6 +47,28 @@ export interface CreateClientData {
   internalNotesSummary?: string;
 }
 
+
+export interface ClientDetail {
+  clientId: number;
+  clientCode: string;
+  clientName: string;
+  clientType: string;
+  status: string;
+  firstName: string | null;
+  lastName: string | null;
+  organizationName: string | null;
+  email: string | null;
+  phone: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  postcode: string | null;
+  country: string | null;
+  internalNotesSummary: string | null;
+  createdAt: string;
+}
+
 export const getClients = async (
   params: GetClientsParams,
 ): Promise<PagedResult<ClientListItem>> => {
@@ -59,4 +81,9 @@ export const createClient = async (
 ): Promise<ClientListItem> => {
   const response = await apiClient.post("/clients", data);
   return response.data.data;
+};
+
+export const getClientById = async (id : number): Promise<ClientDetail> => {
+    const response = await apiClient.get(`/clients/${id}`);
+    return response.data.data;
 };
