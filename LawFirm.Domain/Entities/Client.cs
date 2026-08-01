@@ -34,5 +34,7 @@ namespace LawFirm.Domain.Entities
         public string? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string? UpdatedBy { get; set; }
+
+        public ICollection<ClientContact> ClientContacts { get; set; } = new List<ClientContact>();
     }
 }

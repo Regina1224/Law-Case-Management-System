@@ -7,6 +7,7 @@ public class LawFirmDbContext : DbContext
     // Entities
     public DbSet<PracticeArea> PracticeAreas => Set<PracticeArea>();
     public DbSet<Client> Clients => Set<Client>();
+    public DbSet<ClientContact> ClientContacts => Set<ClientContact>();
     public LawFirmDbContext(DbContextOptions<LawFirmDbContext> options) : base(options)
     {
         

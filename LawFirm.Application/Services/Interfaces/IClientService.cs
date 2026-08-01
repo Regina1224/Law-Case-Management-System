@@ -13,6 +13,10 @@ public interface IClientService
     Task<ClientDetailDto> GetClientByIdAsync(int id);
 
     Task<ClientDetailDto> UpdateClientAsync(int id, UpdateClientDto dto);
+
+    Task<ClientContactDto> AddClientContactAsync(int clientId, CreateClientContactDto dto);
+
+    Task<List<ClientContactDto>> GetClientContactsAsync(int clientId);
     
 
 

@@ -9,10 +9,12 @@ namespace LawFirm.Application.Services;
 public class ClientService : IClientService
 {
     private readonly IClientRepository _clientRepository;
+    private readonly IClientContactRepository _clientContactRepository;
 
-    public ClientService(IClientRepository clientRepository)
+    public ClientService(IClientRepository clientRepository, IClientContactRepository clientContactRepository)
     {
         _clientRepository = clientRepository;
+        _clientContactRepository = clientContactRepository;
     }
 
     public async Task<PagedResultDto<ClientListItemDto>> GetClientsAsync(
@@ -159,7 +161,7 @@ public class ClientService : IClientService
             throw new KeyNotFoundException($"Client with id {id} was not found.");
         }
 
-        // 第一步：校验（跟Corporate/Individual都无关，走完就结束）
+        // Step 1: Validation (This is unrelated to Corporate/Individual; once completed, the process ends).
         if (client.ClientType == "Individual")
         {
             if (string.IsNullOrEmpty(dto.FirstName) || string.IsNullOrEmpty(dto.LastName))
@@ -221,6 +223,73 @@ public class ClientService : IClientService
             CreatedAt = updatedClient.CreatedAt
         };
     }
+
+
+
+    public async Task<ClientContactDto> AddClientContactAsync(int clientId, CreateClientContactDto dto)
+    {
+        // TODO 1: First, use _clientRepository.GetByIdAsync(clientId) to check if the Client exists.
+        // If it does not exist, throw a KeyNotFoundException.
+        var client = await _clientRepository.GetByIdAsync(clientId);
+        if (client == null)
+        {
+            throw new KeyNotFoundException($"Client with id {clientId} was not found.");
+        }
+
+        // TODO 2: Create a ClientContact entity
+        // new ClientContact { ClientId = clientId, ContactName = dto.ContactName, ... }
+        // Remember IsActive = true, CreatedAt = DateTime.UtcNow
+        var clientContact = new ClientContact
+        {
+            ClientId = clientId,
+            ContactName = dto.ContactName,
+            RelationshipType = dto.RelationshipType,
+            Email = dto.Email,
+            Phone = dto.Phone,
+            Company = dto.Company,
+            Notes = dto.Notes,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+
+        };
+
+        // TODO 3: Call _clientContactRepository.AddAsync(...) to save
+        var savedContact = await _clientContactRepository.AddAsync(clientContact);
+
+
+        // TODO 4: Convert to ClientContactDto and return
+        return new ClientContactDto
+        {
+            ClientContactId = savedContact.ClientContactId,
+            ClientId = savedContact.ClientId,
+            ContactName = savedContact.ContactName,
+            RelationshipType = savedContact.RelationshipType,
+            Email = savedContact.Email,
+            Phone = savedContact.Phone,
+            Company = savedContact.Company,
+            Notes = savedContact.Notes,
+            CreatedAt = savedContact.CreatedAt
+        };
+    }
+
+
+    public async Task<List<ClientContactDto>> GetClientContactsAsync(int clientId)
+{
+    var contacts = await _clientContactRepository.GetByClientIdAsync(clientId);
+
+    return contacts.Select(c => new ClientContactDto
+    {
+        ClientContactId = c.ClientContactId,
+        ClientId = c.ClientId,
+        ContactName = c.ContactName,
+        RelationshipType = c.RelationshipType,
+        Email = c.Email,
+        Phone = c.Phone,
+        Company = c.Company,
+        Notes = c.Notes,
+        CreatedAt = c.CreatedAt
+    }).ToList();
+}
 }
 
 

@@ -41,6 +41,9 @@ builder.Services.AddScoped<IPracticeAreaService, PracticeAreaService>();
 // Client
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IClientService, ClientService>();
+// Client contact
+builder.Services.AddScoped<IClientContactRepository, ClientContactRepository>();
+
 
 var app = builder.Build();
 
