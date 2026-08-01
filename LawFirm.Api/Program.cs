@@ -43,6 +43,8 @@ builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IClientService, ClientService>();
 // Client contact
 builder.Services.AddScoped<IClientContactRepository, ClientContactRepository>();
+// Client note
+builder.Services.AddScoped<IClientNoteRepository, ClientNoteRepository>();
 
 
 var app = builder.Build();

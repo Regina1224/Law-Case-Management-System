@@ -6,6 +6,11 @@ import {
   getClientContacts,
   type ClientContact,
 } from "../services/clientContactService";
+import {
+  type ClientNote,
+  getClientNotes,
+  createClientNote,
+} from "../services/clientNoteService";
 
 const ClientDetailPage = () => {
   const { id } = useParams();
@@ -17,6 +22,11 @@ const ClientDetailPage = () => {
   const [contactName, setContactName] = useState("");
   const [relationshipType, setRelationshipType] = useState("");
   const [addingContact, setAddingContact] = useState(false);
+
+  const [notes, setNotes] = useState<ClientNote[]>([]);
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteContent, setNoteContent] = useState("");
+  const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -44,6 +54,18 @@ const ClientDetailPage = () => {
     fetchContacts();
   }, [id]);
 
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const result = await getClientNotes(Number(id));
+        setNotes(result);
+      } catch {
+        //
+      }
+    };
+    fetchNotes();
+  }, [id]);
+
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddingContact(true);
@@ -67,6 +89,27 @@ const ClientDetailPage = () => {
     }
   };
 
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingNote(true);
+
+    try {
+      await createClientNote(Number(id), {
+        noteTitle,
+        noteContent,
+      });
+
+      const result = await getClientNotes(Number(id));
+      setNotes(result);
+
+      setNoteTitle("");
+      setNoteContent("");
+    } catch {
+      //
+    } finally {
+      setAddingNote(false);
+    }
+  };
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
@@ -137,6 +180,42 @@ const ClientDetailPage = () => {
         </div>
         <button type="submit" disabled={addingContact}>
           {addingContact ? "Adding..." : "Add Contact"}
+        </button>
+      </form>
+
+      <h2>Notes</h2>
+      {notes.length === 0 ? (
+        <p>No notes yet.</p>
+      ) : (
+        <div>
+          {notes.map((note) => (
+            <div key={note.clientNoteId}>
+              <h4>{note.noteTitle}</h4>
+              <p>{note.noteContent}</p>
+              <small>{note.noteType}</small>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h3>Add Note</h3>
+      <form onSubmit={handleAddNote}>
+        <div>
+          <label>Note Title</label>
+          <input
+            value={noteTitle}
+            onChange={(e) => setNoteTitle(e.target.value)}
+          />
+        </div>
+        <div>
+          <label>Note Content</label>
+          <input
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+          />
+        </div>
+        <button type="submit" disabled={addingNote}>
+          {addingNote ? "Adding..." : "Add Note"}
         </button>
       </form>
     </div>

@@ -36,5 +36,7 @@ namespace LawFirm.Domain.Entities
         public string? UpdatedBy { get; set; }
 
         public ICollection<ClientContact> ClientContacts { get; set; } = new List<ClientContact>();
+
+        public ICollection<ClientNote> ClientNotes { get; set; } = new List<ClientNote>();
     }
 }
