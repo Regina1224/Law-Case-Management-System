@@ -10,11 +10,13 @@ public class ClientService : IClientService
 {
     private readonly IClientRepository _clientRepository;
     private readonly IClientContactRepository _clientContactRepository;
+    private readonly IClientNoteRepository _clientNoteRepository;
 
-    public ClientService(IClientRepository clientRepository, IClientContactRepository clientContactRepository)
+    public ClientService(IClientRepository clientRepository, IClientContactRepository clientContactRepository, IClientNoteRepository clientNoteRepository)
     {
         _clientRepository = clientRepository;
         _clientContactRepository = clientContactRepository;
+        _clientNoteRepository = clientNoteRepository;
     }
 
     public async Task<PagedResultDto<ClientListItemDto>> GetClientsAsync(
@@ -274,22 +276,67 @@ public class ClientService : IClientService
 
 
     public async Task<List<ClientContactDto>> GetClientContactsAsync(int clientId)
-{
-    var contacts = await _clientContactRepository.GetByClientIdAsync(clientId);
-
-    return contacts.Select(c => new ClientContactDto
     {
-        ClientContactId = c.ClientContactId,
-        ClientId = c.ClientId,
-        ContactName = c.ContactName,
-        RelationshipType = c.RelationshipType,
-        Email = c.Email,
-        Phone = c.Phone,
-        Company = c.Company,
-        Notes = c.Notes,
-        CreatedAt = c.CreatedAt
-    }).ToList();
-}
+        var contacts = await _clientContactRepository.GetByClientIdAsync(clientId);
+
+        return contacts.Select(c => new ClientContactDto
+        {
+            ClientContactId = c.ClientContactId,
+            ClientId = c.ClientId,
+            ContactName = c.ContactName,
+            RelationshipType = c.RelationshipType,
+            Email = c.Email,
+            Phone = c.Phone,
+            Company = c.Company,
+            Notes = c.Notes,
+            CreatedAt = c.CreatedAt
+        }).ToList();
+    }
+
+    public async Task<ClientNoteDto> AddClientNoteAsync(int clientId, CreateClientNoteDto dto)
+    {
+        var client = await _clientRepository.GetByIdAsync(clientId);
+        if (client == null)
+        {
+            throw new KeyNotFoundException($"Client with id {clientId} was not found.");
+        }
+
+        var note = new ClientNote
+        {
+            ClientId = clientId,
+            NoteTitle = dto.NoteTitle,
+            NoteContent = dto.NoteContent,
+            NoteType = dto.NoteType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var savedNote = await _clientNoteRepository.AddAsync(note);
+
+        return new ClientNoteDto
+        {
+            ClientNoteId = savedNote.ClientNoteId,
+            ClientId = savedNote.ClientId,
+            NoteTitle = savedNote.NoteTitle,
+            NoteContent = savedNote.NoteContent,
+            NoteType = savedNote.NoteType,
+            CreatedAt = savedNote.CreatedAt
+        };
+    }
+
+    public async Task<List<ClientNoteDto>> GetClientNotesAsync(int clientId)
+    {
+        var notes = await _clientNoteRepository.GetByClientIdAsync(clientId);
+
+        return notes.Select(n => new ClientNoteDto
+        {
+            ClientNoteId = n.ClientNoteId,
+            ClientId = n.ClientId,
+            NoteTitle = n.NoteTitle,
+            NoteContent = n.NoteContent,
+            NoteType = n.NoteType,
+            CreatedAt = n.CreatedAt
+        }).ToList();
+    }
 }
 
 
