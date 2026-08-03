@@ -45,6 +45,9 @@ builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IClientContactRepository, ClientContactRepository>();
 // Client note
 builder.Services.AddScoped<IClientNoteRepository, ClientNoteRepository>();
+// Intake
+builder.Services.AddScoped<IIntakeRepository, IntakeRepository>();
+builder.Services.AddScoped<IIntakeService, IntakeService>();
 
 
 var app = builder.Build();
