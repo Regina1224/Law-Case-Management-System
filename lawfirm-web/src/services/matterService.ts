@@ -30,9 +30,31 @@ export interface GetMattersParams {
   pageSize?: number;
 }
 
+export interface CreateMatterDto {
+  clientId: number;
+  matterTitle: string;
+  matterTypeId: number;
+  practiceAreaId: number;
+  responsibleLawyer: string;
+  supportingStaff?: string;
+  status: string;
+  priority?: string;
+  summary: string;
+  openedDate: string;
+  targetCloseDate?: string;
+  isConfidential: boolean;
+}
+
 export const getMatters = async (
   params: GetMattersParams
 ): Promise<PagedResult<MatterListItem>> => {
   const response = await apiClient.get("/matters", { params });
+  return response.data.data;
+};
+
+export const createMatter = async (
+  dto: CreateMatterDto
+): Promise<MatterListItem> => {
+  const response = await apiClient.post("/matters", dto);
   return response.data.data;
 };
