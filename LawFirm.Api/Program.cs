@@ -52,6 +52,12 @@ builder.Services.AddScoped<IIntakeService, IntakeService>();
 // Document
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
+//MatterType
+builder.Services.AddScoped<IMatterTypeRepository, MatterTypeRepository>();
+builder.Services.AddScoped<IMatterTypeService, MatterTypeService>();
+// Matter
+builder.Services.AddScoped<IMatterRepository, MatterRepository>();
+builder.Services.AddScoped<IMatterService, MatterService>();
 
 
 var app = builder.Build();
