@@ -7,6 +7,7 @@ using LawFirm.Infrastructure.Repositories.Interfaces;
 using LawFirm.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,7 +49,9 @@ builder.Services.AddScoped<IClientNoteRepository, ClientNoteRepository>();
 // Intake
 builder.Services.AddScoped<IIntakeRepository, IntakeRepository>();
 builder.Services.AddScoped<IIntakeService, IntakeService>();
-
+// Document
+builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
+builder.Services.AddScoped<IDocumentService, DocumentService>();
 
 
 var app = builder.Build();
@@ -59,6 +62,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseMiddleware<ExceptionMiddleware>();

@@ -9,22 +9,33 @@ public class LawFirmDbContext : DbContext
     public DbSet<Client> Clients => Set<Client>();
     public DbSet<ClientContact> ClientContacts => Set<ClientContact>();
     public DbSet<ClientNote> ClientNotes => Set<ClientNote>();
-
     public DbSet<Intake> Intakes => Set<Intake>();
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-{
-    base.OnModelCreating(modelBuilder);
+    public DbSet<Document> Documents => Set<Document>();
 
-    modelBuilder.Entity<Intake>()
-        .HasOne(i => i.PracticeArea)
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Intake>()
+            .HasOne(i => i.PracticeArea)
+            .WithMany()
+            .HasForeignKey(i => i.PracticeAreaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Document>()
+        .HasOne(d => d.Intake)
         .WithMany()
-        .HasForeignKey(i => i.PracticeAreaId)
-        .OnDelete(DeleteBehavior.Restrict);
-}
+        .HasForeignKey(d => d.IntakeId)
+        .OnDelete(DeleteBehavior.Cascade)
+        .IsRequired(false);
+    }
+
+
     public LawFirmDbContext(DbContextOptions<LawFirmDbContext> options) : base(options)
     {
-        
-        
+
+
     }
 
 }

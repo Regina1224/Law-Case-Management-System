@@ -15,8 +15,13 @@
   <ItemGroup>
     <Folder Include="DTOs/" />
     <Folder Include="DTOs/Clients/" />
+    <Folder Include="DTOs/Documents/" />
     <Folder Include="DTOs/Intakes/" />
     <Folder Include="DTOs/ReferenceData/" />
   </ItemGroup>
+
+  <ItemGroup>
+  <FrameworkReference Include="Microsoft.AspNetCore.App" />
+</ItemGroup>
 
 </Project>

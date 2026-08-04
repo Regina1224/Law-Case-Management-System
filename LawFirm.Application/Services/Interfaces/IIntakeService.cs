@@ -9,4 +9,8 @@ public interface IIntakeService
 
     Task<IntakeDetailDto> CreateIntakeAsync(CreateIntakeDto dto);
 
+    Task<IntakeDetailDto> GetIntakeByIdAsync(int id);
+
+    Task<IntakeDetailDto> UpdateIntakeAsync(int id, UpdateIntakeDto dto);
+
 }

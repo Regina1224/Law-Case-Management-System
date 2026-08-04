@@ -108,6 +108,95 @@ namespace LawFirm.Application.Services
                 CreatedAt = savedIntake.CreatedAt
             };
         }
+
+
+        public async Task<IntakeDetailDto> GetIntakeByIdAsync(int id)
+        {
+            var intake = await _intakeRepository.GetByIdAsync(id);
+            if (intake == null)
+            {
+                throw new KeyNotFoundException($"Intake with id {id} was not found.");
+            }
+
+            return new IntakeDetailDto
+            {
+                IntakeId = intake.IntakeId,
+                IntakeCode = intake.IntakeCode,
+                ProspectiveClientName = intake.ProspectiveClientName,
+                IntendedClientType = intake.IntendedClientType,
+                PrimaryEmail = intake.Email,
+                PrimaryPhone = intake.Phone,
+                PracticeAreaId = intake.PracticeAreaId,
+                PracticeAreaName = intake.PracticeArea.Name,
+                LegalIssueSummary = intake.LegalIssueSummary,
+                Urgency = intake.Urgency,
+                AssignedReviewer = intake.AssignedReviewer,
+                SourceOfEnquiry = intake.SourceOfEnquiry,
+                ConsultationDate = intake.ConsultationDate,
+                Status = intake.Status,
+                CreatedAt = intake.CreatedAt
+            };
+        }
+
+        public async Task<IntakeDetailDto> UpdateIntakeAsync(int id, UpdateIntakeDto dto)
+        {
+            var intake = await _intakeRepository.GetByIdAsync(id);
+            if (intake == null)
+            {
+                throw new KeyNotFoundException($"Intake with id {id} was not found.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Status))
+            {
+                throw new ArgumentException("Status is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.LegalIssueSummary))
+            {
+                throw new ArgumentException("Legal issue summary is required.");
+            }
+
+        
+            var practiceArea = await _practiceAreaRepository.GetByIdAsync(dto.PracticeAreaId);
+            if (practiceArea == null)
+            {
+                throw new KeyNotFoundException($"Practice area with id {dto.PracticeAreaId} was not found.");
+            }
+
+            
+            if (intake.Status == "Converted")
+            {
+                throw new ArgumentException("A converted intake cannot be edited.");
+            }
+
+            intake.Status = dto.Status;
+            intake.AssignedReviewer = dto.AssignedReviewer;
+            intake.PracticeAreaId = dto.PracticeAreaId;
+            intake.Urgency = dto.Urgency;
+            intake.ConsultationDate = dto.ConsultationDate;
+            intake.LegalIssueSummary = dto.LegalIssueSummary;
+
+            var updatedIntake = await _intakeRepository.UpdateAsync(intake);
+
+            return new IntakeDetailDto
+            {
+                IntakeId = updatedIntake.IntakeId,
+                IntakeCode = updatedIntake.IntakeCode,
+                ProspectiveClientName = updatedIntake.ProspectiveClientName,
+                IntendedClientType = updatedIntake.IntendedClientType,
+                PrimaryEmail = updatedIntake.Email,
+                PrimaryPhone = updatedIntake.Phone,
+                PracticeAreaId = updatedIntake.PracticeAreaId,
+                PracticeAreaName = practiceArea.Name,
+                LegalIssueSummary = updatedIntake.LegalIssueSummary,
+                Urgency = updatedIntake.Urgency,
+                AssignedReviewer = updatedIntake.AssignedReviewer,
+                SourceOfEnquiry = updatedIntake.SourceOfEnquiry,
+                ConsultationDate = updatedIntake.ConsultationDate,
+                Status = updatedIntake.Status,
+                CreatedAt = updatedIntake.CreatedAt
+            };
+        }
     }
 
 }

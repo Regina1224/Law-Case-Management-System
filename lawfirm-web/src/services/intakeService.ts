@@ -58,6 +58,27 @@ export interface IntakeDetail {
   createdAt: string;
 }
 
+// Update Intake request body type
+export interface UpdateIntakeDto {
+  status: string;
+  assignedReviewer?: string;
+  practiceAreaId: number;
+  urgency?: string;
+  consultationDate?: string;
+  legalIssueSummary: string;
+}
+
+// File Type
+export interface IntakeDocument {
+  documentId: number;
+  originalFileName: string;
+  documentCategory: string;
+  description: string | null;
+  fileSizeBytes: number;
+  contentType: string;
+  uploadedAt: string;
+}
+
 export const getIntakes = async (
   params: GetIntakesParams
 ): Promise<PagedResult<IntakeListItem>> => {
@@ -71,4 +92,54 @@ export const createIntake = async (
 ): Promise<IntakeDetail> => {
   const response = await apiClient.post("/intakes", dto);
   return response.data.data;
+};
+
+// Get Intake details
+export const getIntakeById = async (id: number): Promise<IntakeDetail> => {
+  const response = await apiClient.get(`/intakes/${id}`);
+  return response.data.data;
+};
+
+// Update Intake
+export const updateIntake = async (
+  id: number,
+  dto: UpdateIntakeDto
+): Promise<IntakeDetail> => {
+  const response = await apiClient.put(`/intakes/${id}`, dto);
+  return response.data.data;
+};
+
+// Get Intake file list
+export const getIntakeDocuments = async (
+  intakeId: number
+): Promise<IntakeDocument[]> => {
+  const response = await apiClient.get(`/intakes/${intakeId}/documents`);
+  return response.data.data;
+};
+
+// Upload Intake document
+export const uploadIntakeDocument = async (
+  intakeId: number,
+  file: File,
+  documentCategory: string,
+  description: string
+): Promise<IntakeDocument> => {
+  const formData = new FormData();
+  formData.append("File", file);
+  formData.append("DocumentCategory", documentCategory);
+  formData.append("Description", description);
+
+  const response = await apiClient.post(
+    `/intakes/${intakeId}/documents`,
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
+  return response.data.data;
+};
+
+// Document download link
+export const getDocumentDownloadUrl = (documentId: number): string => {
+  return `${apiClient.defaults.baseURL}/documents/${documentId}/download`;
 };
