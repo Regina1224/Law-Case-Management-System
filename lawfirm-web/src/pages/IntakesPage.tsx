@@ -30,6 +30,7 @@ const IntakesPage = () => {
     <div>
       <h1>Intakes</h1>
       <p>Total: {totalCount}</p>
+      <Link to="/intakes/create">Create Intake</Link>
 
       <table>
         <thead>

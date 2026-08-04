@@ -75,4 +75,8 @@ public class IntakeRepository : IIntakeRepository
         return await _dbContext.Intakes.CountAsync();
     }
 
+    public async Task<int> GetTotalCountAsync()
+{
+    return await _dbContext.Intakes.CountAsync();
+}
 }
