@@ -4,6 +4,7 @@ using LawFirm.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LawFirm.Infrastructure.Migrations
 {
     [DbContext(typeof(LawFirmDbContext))]
-    partial class LawFirmDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260804090628_AddMatterType")]
+    partial class AddMatterType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -315,83 +318,6 @@ namespace LawFirm.Infrastructure.Migrations
                     b.ToTable("Intakes");
                 });
 
-            modelBuilder.Entity("LawFirm.Domain.Entities.Matter", b =>
-                {
-                    b.Property<int>("MatterId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MatterId"));
-
-                    b.Property<int>("ClientId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ClosedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsConfidential")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("MatterNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MatterTitle")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MatterTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("OpenedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("PracticeAreaId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Priority")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ResponsibleLawyer")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Summary")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SupportingStaff")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("TargetCloseDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("MatterId");
-
-                    b.HasIndex("ClientId");
-
-                    b.HasIndex("MatterTypeId");
-
-                    b.HasIndex("PracticeAreaId");
-
-                    b.ToTable("Matters");
-                });
-
             modelBuilder.Entity("LawFirm.Domain.Entities.MatterType", b =>
                 {
                     b.Property<int>("Id")
@@ -495,33 +421,6 @@ namespace LawFirm.Infrastructure.Migrations
                         .HasForeignKey("PracticeAreaId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("PracticeArea");
-                });
-
-            modelBuilder.Entity("LawFirm.Domain.Entities.Matter", b =>
-                {
-                    b.HasOne("LawFirm.Domain.Entities.Client", "Client")
-                        .WithMany()
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("LawFirm.Domain.Entities.MatterType", "MatterType")
-                        .WithMany()
-                        .HasForeignKey("MatterTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("LawFirm.Domain.Entities.PracticeArea", "PracticeArea")
-                        .WithMany()
-                        .HasForeignKey("PracticeAreaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Client");
-
-                    b.Navigation("MatterType");
 
                     b.Navigation("PracticeArea");
                 });

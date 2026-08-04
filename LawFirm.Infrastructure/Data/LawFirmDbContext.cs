@@ -11,6 +11,8 @@ public class LawFirmDbContext : DbContext
     public DbSet<ClientNote> ClientNotes => Set<ClientNote>();
     public DbSet<Intake> Intakes => Set<Intake>();
     public DbSet<Document> Documents => Set<Document>();
+    public DbSet<MatterType> MatterTypes => Set<MatterType>();
+    public DbSet<Matter> Matters => Set<Matter>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -24,11 +26,29 @@ public class LawFirmDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Document>()
-        .HasOne(d => d.Intake)
-        .WithMany()
-        .HasForeignKey(d => d.IntakeId)
-        .OnDelete(DeleteBehavior.Cascade)
-        .IsRequired(false);
+            .HasOne(d => d.Intake)
+            .WithMany()
+            .HasForeignKey(d => d.IntakeId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
+        modelBuilder.Entity<Matter>()
+            .HasOne(m => m.Client)
+            .WithMany()
+            .HasForeignKey(m => m.ClientId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Matter>()
+            .HasOne(m => m.MatterType)
+            .WithMany()
+            .HasForeignKey(m => m.MatterTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Matter>()
+            .HasOne(m => m.PracticeArea)
+            .WithMany()
+            .HasForeignKey(m => m.PracticeAreaId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
 
