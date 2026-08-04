@@ -49,6 +49,7 @@ const MattersPage = () => {
   return (
     <div>
       <h1>Matters</h1>
+      <Link to="/matters/create">Create Matter</Link>
 
       <form onSubmit={handleSearch}>
         <input
