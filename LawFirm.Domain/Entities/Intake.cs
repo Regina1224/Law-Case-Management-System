@@ -23,4 +23,5 @@ namespace LawFirm.Domain.Entities;
 
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
-    }
+
+}

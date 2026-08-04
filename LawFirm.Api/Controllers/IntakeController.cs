@@ -1,11 +1,12 @@
+using Azure;
 using LawFirm.Application.DTOs.Intakes;
-using LawFirm.Application.Services;
+using LawFirm.Application.Services.Interfaces;
 using LawFirm.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LawFirm.Api.Controllers
-{
+namespace LawFirm.Api.Controllers;
+
     [ApiController]
     [Route("api/[controller]")]
     //[Authorize]
@@ -32,5 +33,13 @@ namespace LawFirm.Api.Controllers
 
             return Ok(ApiResponse<PagedResultDto<IntakeListItemDto>>.Ok(result));
         }
+
+
+        [HttpPost]
+        public async Task<IActionResult> CreateIntake([FromBody] CreateIntakeDto dto)
+        {
+            var result = await _intakeService.CreateIntakeAsync(dto);
+            return Ok(ApiResponse<IntakeDetailDto>.Ok(result));
+
     }
 }

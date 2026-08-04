@@ -8,6 +8,7 @@ import AdminPage from "../pages/AdminPage"
 import CreateClientPage from "../pages/CreateClientPage"
 import ClientDetailPage from "../pages/ClientDetailPage"
 import EditClientPage from "../pages/EditClientPage"
+import CreateIntakePage from "../pages/CreateIntakePage"
 
 
 const router = createBrowserRouter([
@@ -21,6 +22,7 @@ const router = createBrowserRouter([
             {path: 'clients/:id', element: <ClientDetailPage />},
             {path: 'clients/:id/edit', element: <EditClientPage />},
             {path: 'intakes', element: <IntakesPage />},
+            {path: 'intakes/create', element: <CreateIntakePage />},
             {path: 'matters', element: <MattersPage />},
             {path: 'admin', element: <AdminPage />},
         ]

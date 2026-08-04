@@ -17,8 +17,6 @@
     <Folder Include="DTOs/Clients/" />
     <Folder Include="DTOs/Intakes/" />
     <Folder Include="DTOs/ReferenceData/" />
-    <Folder Include="Services/" />
-    <Folder Include="Services/Interfaces/" />
   </ItemGroup>
 
 </Project>

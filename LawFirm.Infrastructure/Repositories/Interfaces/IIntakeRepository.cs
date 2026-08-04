@@ -10,5 +10,6 @@ namespace LawFirm.Infrastructure.Repositories.Interfaces
         Task<Intake?> GetByIdAsync(int id);
         Task<Intake> AddAsync(Intake intake);
         Task<int> GetIntakeCountAsync();
+        Task<int> GetTotalCountAsync();
     }
 }
