@@ -21,7 +21,7 @@ public class IntakeRepository : IIntakeRepository
             int page,
             int pageSize)
     {
-        IQueryable<Intake> query = _dbContext.Intakes.Include(i=>i.PracticeArea).AsNoTracking();
+        IQueryable<Intake> query = _dbContext.Intakes.Include(i => i.PracticeArea).AsNoTracking();
 
         if (!string.IsNullOrEmpty(keyword))
         {
@@ -61,7 +61,7 @@ public class IntakeRepository : IIntakeRepository
 
     public async Task<Intake?> GetByIdAsync(int id)
     {
-        return await _dbContext.Intakes.Include(i=>i.PracticeArea).FirstOrDefaultAsync(i=>i.IntakeId == id);
+        return await _dbContext.Intakes.Include(i => i.PracticeArea).FirstOrDefaultAsync(i => i.IntakeId == id);
     }
     public async Task<Intake> AddAsync(Intake intake)
     {
@@ -70,13 +70,20 @@ public class IntakeRepository : IIntakeRepository
         return intake;
 
     }
-    public async Task<int> GetIntakeCountAsync()
+    // public async Task<int> GetIntakeCountAsync()
+    // {
+    //     return await _dbContext.Intakes.CountAsync();
+    // }
+
+    public async Task<int> GetTotalCountAsync()
     {
         return await _dbContext.Intakes.CountAsync();
     }
 
-    public async Task<int> GetTotalCountAsync()
-{
-    return await _dbContext.Intakes.CountAsync();
-}
+    public async Task<Intake> UpdateAsync(Intake intake)
+    {
+        _dbContext.Intakes.Update(intake);
+        await _dbContext.SaveChangesAsync();
+        return intake;
+    }
 }
