@@ -38,4 +38,5 @@ public class Matter
     public string? UpdatedBy { get; set; }
 
     public ICollection<MatterNote> MatterNotes { get; set; } = new List<MatterNote>();
+    public ICollection<MatterRelatedParty> MatterRelatedParties { get; set; } = new List<MatterRelatedParty>();
 }

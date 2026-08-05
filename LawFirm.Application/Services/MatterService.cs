@@ -13,19 +13,22 @@ public class MatterService : IMatterService
     private readonly IMatterTypeRepository _matterTypeRepository;
     private readonly IPracticeAreaRepository _practiceAreaRepository;
     private readonly IMatterNoteRepository _matterNoteRepository;
+    private readonly IMatterRelatedPartyRepository _matterRelatedPartyRepository;
 
     public MatterService(
         IMatterRepository matterRepository,
         IClientRepository clientRepository,
         IMatterTypeRepository matterTypeRepository,
         IPracticeAreaRepository practiceAreaRepository,
-        IMatterNoteRepository matterNoteRepository)
+        IMatterNoteRepository matterNoteRepository,
+        IMatterRelatedPartyRepository matterRelatedPartyRepository)
     {
         _matterRepository = matterRepository;
         _clientRepository = clientRepository;
         _matterTypeRepository = matterTypeRepository;
         _practiceAreaRepository = practiceAreaRepository;
         _matterNoteRepository = matterNoteRepository;
+        _matterRelatedPartyRepository = matterRelatedPartyRepository;
     }
 
     public async Task<PagedResultDto<MatterListItemDto>> GetMattersAsync(
@@ -279,5 +282,94 @@ public class MatterService : IMatterService
             NoteType = n.NoteType,
             CreatedAt = n.CreatedAt
         }).ToList();
+    }
+
+    public async Task<MatterRelatedPartyDto> AddMatterRelatedPartyAsync(int matterId, CreateMatterRelatedPartyDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        var party = new MatterRelatedParty
+        {
+            MatterId = matterId,
+            PartyName = dto.PartyName,
+            PartyType = dto.PartyType,
+            Email = dto.Email,
+            Phone = dto.Phone,
+            Organization = dto.Organization,
+            Address = dto.Address,
+            Notes = dto.Notes,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var saved = await _matterRelatedPartyRepository.AddAsync(party);
+
+        return MapMatterRelatedPartyToDto(saved);
+    }
+
+    public async Task<List<MatterRelatedPartyDto>> GetMatterRelatedPartiesAsync(int matterId)
+    {
+        var parties = await _matterRelatedPartyRepository.GetByMatterIdAsync(matterId);
+
+        return parties.Select(MapMatterRelatedPartyToDto).ToList();
+    }
+
+    public async Task<MatterRelatedPartyDto> UpdateMatterRelatedPartyAsync(int matterId, int partyId, UpdateMatterRelatedPartyDto dto)
+    {
+        var party = await _matterRelatedPartyRepository.GetByIdAsync(partyId);
+        if (party == null || party.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Related party with id {partyId} was not found for matter {matterId}.");
+        }
+
+        party.PartyName = dto.PartyName;
+        party.PartyType = dto.PartyType;
+        party.Email = dto.Email;
+        party.Phone = dto.Phone;
+        party.Organization = dto.Organization;
+        party.Address = dto.Address;
+        party.Notes = dto.Notes;
+        party.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRelatedPartyRepository.UpdateAsync(party);
+
+        return MapMatterRelatedPartyToDto(updated);
+    }
+
+    public async Task<MatterRelatedPartyDto> DeactivateMatterRelatedPartyAsync(int matterId, int partyId)
+    {
+        var party = await _matterRelatedPartyRepository.GetByIdAsync(partyId);
+        if (party == null || party.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Related party with id {partyId} was not found for matter {matterId}.");
+        }
+
+        party.IsActive = false;
+        party.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRelatedPartyRepository.UpdateAsync(party);
+
+        return MapMatterRelatedPartyToDto(updated);
+    }
+
+    private static MatterRelatedPartyDto MapMatterRelatedPartyToDto(MatterRelatedParty party)
+    {
+        return new MatterRelatedPartyDto
+        {
+            MatterRelatedPartyId = party.MatterRelatedPartyId,
+            MatterId = party.MatterId,
+            PartyName = party.PartyName,
+            PartyType = party.PartyType,
+            Email = party.Email,
+            Phone = party.Phone,
+            Organization = party.Organization,
+            Address = party.Address,
+            Notes = party.Notes,
+            CreatedAt = party.CreatedAt
+        };
     }
 }

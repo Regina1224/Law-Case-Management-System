@@ -19,4 +19,12 @@ public interface IMatterService
     Task<MatterNoteDto> AddMatterNoteAsync(int matterId, CreateMatterNoteDto dto);
 
     Task<List<MatterNoteDto>> GetMatterNotesAsync(int matterId);
+
+    Task<MatterRelatedPartyDto> AddMatterRelatedPartyAsync(int matterId, CreateMatterRelatedPartyDto dto);
+
+    Task<List<MatterRelatedPartyDto>> GetMatterRelatedPartiesAsync(int matterId);
+
+    Task<MatterRelatedPartyDto> UpdateMatterRelatedPartyAsync(int matterId, int partyId, UpdateMatterRelatedPartyDto dto);
+
+    Task<MatterRelatedPartyDto> DeactivateMatterRelatedPartyAsync(int matterId, int partyId);
 }

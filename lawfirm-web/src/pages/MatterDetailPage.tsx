@@ -10,6 +10,13 @@ import {
   createMatterNote,
   type MatterNote,
 } from "../services/matterNoteService";
+import {
+  getMatterRelatedParties,
+  createMatterRelatedParty,
+  updateMatterRelatedParty,
+  deactivateMatterRelatedParty,
+  type MatterRelatedParty,
+} from "../services/matterRelatedPartyService";
 
 const MATTER_STATUSES = [
   "Draft",
@@ -46,6 +53,19 @@ const MatterDetailPage = () => {
   const [noteType, setNoteType] = useState("");
   const [addingNote, setAddingNote] = useState(false);
 
+  // Related parties
+  const [relatedParties, setRelatedParties] = useState<MatterRelatedParty[]>([]);
+  const [editingPartyId, setEditingPartyId] = useState<number | null>(null);
+  const [partyName, setPartyName] = useState("");
+  const [partyType, setPartyType] = useState("");
+  const [partyEmail, setPartyEmail] = useState("");
+  const [partyPhone, setPartyPhone] = useState("");
+  const [partyOrganization, setPartyOrganization] = useState("");
+  const [partyAddress, setPartyAddress] = useState("");
+  const [partyNotes, setPartyNotes] = useState("");
+  const [savingParty, setSavingParty] = useState(false);
+  const [partyError, setPartyError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchMatter = async () => {
       setLoading(true);
@@ -80,6 +100,92 @@ const MatterDetailPage = () => {
     };
     fetchNotes();
   }, [matterId]);
+
+  useEffect(() => {
+    const fetchParties = async () => {
+      try {
+        const result = await getMatterRelatedParties(matterId);
+        setRelatedParties(result);
+      } catch {
+        // Failure to load related parties does not affect the display of the main details page
+      }
+    };
+    fetchParties();
+  }, [matterId]);
+
+  const resetPartyForm = () => {
+    setEditingPartyId(null);
+    setPartyName("");
+    setPartyType("");
+    setPartyEmail("");
+    setPartyPhone("");
+    setPartyOrganization("");
+    setPartyAddress("");
+    setPartyNotes("");
+  };
+
+  const handleEditParty = (party: MatterRelatedParty) => {
+    setEditingPartyId(party.matterRelatedPartyId);
+    setPartyName(party.partyName);
+    setPartyType(party.partyType);
+    setPartyEmail(party.email ?? "");
+    setPartyPhone(party.phone ?? "");
+    setPartyOrganization(party.organization ?? "");
+    setPartyAddress(party.address ?? "");
+    setPartyNotes(party.notes ?? "");
+    setPartyError(null);
+  };
+
+  const handleSubmitParty = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!partyName || !partyType) {
+      setPartyError("Please fill in all required fields.");
+      return;
+    }
+
+    setSavingParty(true);
+    setPartyError(null);
+
+    const data = {
+      partyName,
+      partyType,
+      email: partyEmail || undefined,
+      phone: partyPhone || undefined,
+      organization: partyOrganization || undefined,
+      address: partyAddress || undefined,
+      notes: partyNotes || undefined,
+    };
+
+    try {
+      if (editingPartyId) {
+        await updateMatterRelatedParty(matterId, editingPartyId, data);
+      } else {
+        await createMatterRelatedParty(matterId, data);
+      }
+
+      const result = await getMatterRelatedParties(matterId);
+      setRelatedParties(result);
+      resetPartyForm();
+    } catch {
+      setPartyError("Failed to save related party.");
+    } finally {
+      setSavingParty(false);
+    }
+  };
+
+  const handleDeactivateParty = async (partyId: number) => {
+    try {
+      await deactivateMatterRelatedParty(matterId, partyId);
+      const result = await getMatterRelatedParties(matterId);
+      setRelatedParties(result);
+      if (editingPartyId === partyId) {
+        resetPartyForm();
+      }
+    } catch {
+      setPartyError("Failed to deactivate related party.");
+    }
+  };
 
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,6 +413,115 @@ const MatterDetailPage = () => {
           <button type="submit" disabled={addingNote}>
             {addingNote ? "Adding..." : "Add Note"}
           </button>
+        </form>
+      </section>
+
+      {/* Related Parties */}
+      <section>
+        <h2>Related Parties</h2>
+
+        {relatedParties.length === 0 ? (
+          <p>No related parties yet.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Organization</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {relatedParties.map((party) => (
+                <tr key={party.matterRelatedPartyId}>
+                  <td>{party.partyName}</td>
+                  <td>{party.partyType}</td>
+                  <td>{party.email ?? "-"}</td>
+                  <td>{party.phone ?? "-"}</td>
+                  <td>{party.organization ?? "-"}</td>
+                  <td>
+                    <button type="button" onClick={() => handleEditParty(party)}>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDeactivateParty(party.matterRelatedPartyId)
+                      }
+                    >
+                      Deactivate
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        <h3>{editingPartyId ? "Edit Related Party" : "Add Related Party"}</h3>
+        {partyError && <p style={{ color: "red" }}>{partyError}</p>}
+
+        <form onSubmit={handleSubmitParty}>
+          <div>
+            <label>Party Name</label>
+            <input value={partyName} onChange={(e) => setPartyName(e.target.value)} />
+          </div>
+
+          <div>
+            <label>Party Type</label>
+            <select value={partyType} onChange={(e) => setPartyType(e.target.value)}>
+              <option value="">-- Select Party Type --</option>
+              <option value="Opposing Party">Opposing Party</option>
+              <option value="Witness">Witness</option>
+              <option value="Barrister">Barrister</option>
+              <option value="Court Contact">Court Contact</option>
+              <option value="Insurer">Insurer</option>
+              <option value="Expert">Expert</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Email</label>
+            <input value={partyEmail} onChange={(e) => setPartyEmail(e.target.value)} />
+          </div>
+
+          <div>
+            <label>Phone</label>
+            <input value={partyPhone} onChange={(e) => setPartyPhone(e.target.value)} />
+          </div>
+
+          <div>
+            <label>Organization</label>
+            <input
+              value={partyOrganization}
+              onChange={(e) => setPartyOrganization(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label>Address</label>
+            <input
+              value={partyAddress}
+              onChange={(e) => setPartyAddress(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label>Notes</label>
+            <input value={partyNotes} onChange={(e) => setPartyNotes(e.target.value)} />
+          </div>
+
+          <button type="submit" disabled={savingParty}>
+            {savingParty ? "Saving..." : editingPartyId ? "Save Changes" : "Add Party"}
+          </button>
+          {editingPartyId && (
+            <button type="button" onClick={resetPartyForm}>
+              Cancel
+            </button>
+          )}
         </form>
       </section>
     </div>

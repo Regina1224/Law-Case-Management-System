@@ -14,6 +14,7 @@ public class LawFirmDbContext : DbContext
     public DbSet<MatterType> MatterTypes => Set<MatterType>();
     public DbSet<Matter> Matters => Set<Matter>();
     public DbSet<MatterNote> MatterNotes => Set<MatterNote>();
+    public DbSet<MatterRelatedParty> MatterRelatedParties => Set<MatterRelatedParty>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
