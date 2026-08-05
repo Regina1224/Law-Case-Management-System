@@ -44,4 +44,11 @@ public class MattersController : ControllerBase
         var result = await _matterService.GetMatterByIdAsync(id);
         return Ok(ApiResponse<MatterDetailDto>.Ok(result));
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateMatter(int id, [FromBody] UpdateMatterDto dto)
+    {
+        var result = await _matterService.UpdateMatterAsync(id, dto);
+        return Ok(ApiResponse<MatterDetailDto>.Ok(result));
+    }
 }

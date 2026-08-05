@@ -11,4 +11,5 @@ public interface IMatterRepository
     Task<Matter?> GetByIdAsync(int id);
     Task<Matter> AddAsync(Matter matter);
     Task<int> GetTotalCountAsync();
+    Task<Matter> UpdateAsync(Matter matter);
 }

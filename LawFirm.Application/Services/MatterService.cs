@@ -178,4 +178,58 @@ public class MatterService : IMatterService
             CreatedAt = matter.CreatedAt
         };
     }
+
+    public async Task<MatterDetailDto> UpdateMatterAsync(int id, UpdateMatterDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.ResponsibleLawyer))
+        {
+            throw new ArgumentException("Responsible lawyer is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Status))
+        {
+            throw new ArgumentException("Status is required.");
+        }
+
+        matter.ResponsibleLawyer = dto.ResponsibleLawyer;
+        matter.SupportingStaff = dto.SupportingStaff;
+        matter.Status = dto.Status;
+        matter.Priority = dto.Priority;
+        matter.TargetCloseDate = dto.TargetCloseDate;
+        matter.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRepository.UpdateAsync(matter);
+
+        return new MatterDetailDto
+        {
+            MatterId = updated.MatterId,
+            MatterNumber = updated.MatterNumber,
+            MatterTitle = updated.MatterTitle,
+            ClientId = updated.ClientId,
+            ClientCode = updated.Client.ClientCode,
+            ClientName = updated.Client.ClientType == "Individual"
+                ? $"{updated.Client.FirstName} {updated.Client.LastName}".Trim()
+                : updated.Client.OrganizationName ?? "",
+            MatterTypeId = updated.MatterTypeId,
+            MatterTypeName = updated.MatterType.Name,
+            PracticeAreaId = updated.PracticeAreaId,
+            PracticeAreaName = updated.PracticeArea.Name,
+            ResponsibleLawyer = updated.ResponsibleLawyer,
+            SupportingStaff = updated.SupportingStaff,
+            Status = updated.Status,
+            Priority = updated.Priority,
+            Summary = updated.Summary,
+            OpenedDate = updated.OpenedDate,
+            TargetCloseDate = updated.TargetCloseDate,
+            ClosedDate = updated.ClosedDate,
+            IsConfidential = updated.IsConfidential,
+            CreatedAt = updated.CreatedAt
+        };
+    }
 }

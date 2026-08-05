@@ -86,3 +86,19 @@ export const getMatterById = async (id: number): Promise<MatterDetail> => {
   const response = await apiClient.get(`/matters/${id}`);
   return response.data.data;
 };
+
+export interface UpdateMatterDto {
+  responsibleLawyer: string;
+  supportingStaff?: string;
+  status: string;
+  priority?: string;
+  targetCloseDate?: string;
+}
+
+export const updateMatter = async (
+  id: number,
+  dto: UpdateMatterDto
+): Promise<MatterDetail> => {
+  const response = await apiClient.put(`/matters/${id}`, dto);
+  return response.data.data;
+};

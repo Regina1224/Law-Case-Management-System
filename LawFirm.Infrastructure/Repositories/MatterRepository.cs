@@ -71,7 +71,6 @@ public class MatterRepository : IMatterRepository
             .Include(m => m.Client)
             .Include(m => m.MatterType)
             .Include(m => m.PracticeArea)
-            .AsNoTracking()
             .FirstOrDefaultAsync(m => m.MatterId == id);
     }
 
@@ -85,5 +84,12 @@ public class MatterRepository : IMatterRepository
     public async Task<int> GetTotalCountAsync()
     {
         return await _dbContext.Matters.CountAsync();
+    }
+
+    public async Task<Matter> UpdateAsync(Matter matter)
+    {
+        _dbContext.Matters.Update(matter);
+        await _dbContext.SaveChangesAsync();
+        return matter;
     }
 }
