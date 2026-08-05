@@ -29,6 +29,9 @@ public class Matter
 
     public bool IsConfidential { get; set; }
 
+    public int? SourceIntakeId { get; set; }
+    public Intake? SourceIntake { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public string? CreatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }

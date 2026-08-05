@@ -57,4 +57,11 @@ public class IntakesController : ControllerBase
         var result = await _intakeService.UpdateIntakeAsync(id, dto);
         return Ok(ApiResponse<IntakeDetailDto>.Ok(result));
     }
+
+    [HttpPost("{id}/convert")]
+    public async Task<IActionResult> ConvertIntake(int id, [FromBody] ConvertIntakeDto dto)
+    {
+        var result = await _intakeService.ConvertIntakeAsync(id, dto);
+        return Ok(ApiResponse<ConvertIntakeResultDto>.Ok(result));
+    }
 }
