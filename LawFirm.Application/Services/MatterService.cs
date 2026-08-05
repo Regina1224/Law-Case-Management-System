@@ -143,4 +143,39 @@ public class MatterService : IMatterService
         };
 
     }
+
+    public async Task<MatterDetailDto> GetMatterByIdAsync(int id)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        return new MatterDetailDto
+        {
+            MatterId = matter.MatterId,
+            MatterNumber = matter.MatterNumber,
+            MatterTitle = matter.MatterTitle,
+            ClientId = matter.ClientId,
+            ClientCode = matter.Client.ClientCode,
+            ClientName = matter.Client.ClientType == "Individual"
+                ? $"{matter.Client.FirstName} {matter.Client.LastName}".Trim()
+                : matter.Client.OrganizationName ?? "",
+            MatterTypeId = matter.MatterTypeId,
+            MatterTypeName = matter.MatterType.Name,
+            PracticeAreaId = matter.PracticeAreaId,
+            PracticeAreaName = matter.PracticeArea.Name,
+            ResponsibleLawyer = matter.ResponsibleLawyer,
+            SupportingStaff = matter.SupportingStaff,
+            Status = matter.Status,
+            Priority = matter.Priority,
+            Summary = matter.Summary,
+            OpenedDate = matter.OpenedDate,
+            TargetCloseDate = matter.TargetCloseDate,
+            ClosedDate = matter.ClosedDate,
+            IsConfidential = matter.IsConfidential,
+            CreatedAt = matter.CreatedAt
+        };
+    }
 }

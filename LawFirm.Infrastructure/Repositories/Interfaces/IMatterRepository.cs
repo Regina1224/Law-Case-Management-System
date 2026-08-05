@@ -8,6 +8,7 @@ public interface IMatterRepository
         string? keyword, string? status, int? practiceAreaId,
         string? responsibleLawyer, int? matterTypeId,
         int page, int pageSize);
+    Task<Matter?> GetByIdAsync(int id);
     Task<Matter> AddAsync(Matter matter);
     Task<int> GetTotalCountAsync();
 }

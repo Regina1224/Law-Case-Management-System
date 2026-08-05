@@ -58,3 +58,31 @@ export const createMatter = async (
   const response = await apiClient.post("/matters", dto);
   return response.data.data;
 };
+
+export interface MatterDetail {
+  matterId: number;
+  matterNumber: string;
+  matterTitle: string;
+  clientId: number;
+  clientCode: string;
+  clientName: string;
+  matterTypeId: number;
+  matterTypeName: string;
+  practiceAreaId: number;
+  practiceAreaName: string;
+  responsibleLawyer: string | null;
+  supportingStaff: string | null;
+  status: string;
+  priority: string | null;
+  summary: string;
+  openedDate: string;
+  targetCloseDate: string | null;
+  closedDate: string | null;
+  isConfidential: boolean;
+  createdAt: string;
+}
+
+export const getMatterById = async (id: number): Promise<MatterDetail> => {
+  const response = await apiClient.get(`/matters/${id}`);
+  return response.data.data;
+};

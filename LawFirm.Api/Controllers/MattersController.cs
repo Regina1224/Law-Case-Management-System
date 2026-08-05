@@ -37,4 +37,11 @@ public class MattersController : ControllerBase
         var result = await _matterService.CreateMatterAsync(dto);
         return Ok(ApiResponse<MatterListItemDto>.Ok(result));
     }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetMatterById(int id)
+    {
+        var result = await _matterService.GetMatterByIdAsync(id);
+        return Ok(ApiResponse<MatterDetailDto>.Ok(result));
+    }
 }
