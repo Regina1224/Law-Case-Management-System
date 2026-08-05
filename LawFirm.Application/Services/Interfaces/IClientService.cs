@@ -18,6 +18,8 @@ public interface IClientService
 
     Task<List<ClientContactDto>> GetClientContactsAsync(int clientId);
 
+    Task<ClientContactDto> DeactivateClientContactAsync(int clientId, int contactId);
+
     Task<ClientNoteDto> AddClientNoteAsync(int clientId, CreateClientNoteDto dto);
     
     Task<List<ClientNoteDto>> GetClientNotesAsync(int clientId);

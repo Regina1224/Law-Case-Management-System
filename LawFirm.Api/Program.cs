@@ -60,6 +60,8 @@ builder.Services.AddScoped<IMatterRepository, MatterRepository>();
 builder.Services.AddScoped<IMatterService, MatterService>();
 // Matter note
 builder.Services.AddScoped<IMatterNoteRepository, MatterNoteRepository>();
+// Matter related party
+builder.Services.AddScoped<IMatterRelatedPartyRepository, MatterRelatedPartyRepository>();
 
 
 var app = builder.Build();
