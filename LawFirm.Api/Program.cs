@@ -58,6 +58,8 @@ builder.Services.AddScoped<IMatterTypeService, MatterTypeService>();
 // Matter
 builder.Services.AddScoped<IMatterRepository, MatterRepository>();
 builder.Services.AddScoped<IMatterService, MatterService>();
+// Matter note
+builder.Services.AddScoped<IMatterNoteRepository, MatterNoteRepository>();
 
 
 var app = builder.Build();

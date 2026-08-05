@@ -12,17 +12,20 @@ public class MatterService : IMatterService
     private readonly IClientRepository _clientRepository;
     private readonly IMatterTypeRepository _matterTypeRepository;
     private readonly IPracticeAreaRepository _practiceAreaRepository;
+    private readonly IMatterNoteRepository _matterNoteRepository;
 
     public MatterService(
         IMatterRepository matterRepository,
         IClientRepository clientRepository,
         IMatterTypeRepository matterTypeRepository,
-        IPracticeAreaRepository practiceAreaRepository)
+        IPracticeAreaRepository practiceAreaRepository,
+        IMatterNoteRepository matterNoteRepository)
     {
         _matterRepository = matterRepository;
         _clientRepository = clientRepository;
         _matterTypeRepository = matterTypeRepository;
         _practiceAreaRepository = practiceAreaRepository;
+        _matterNoteRepository = matterNoteRepository;
     }
 
     public async Task<PagedResultDto<MatterListItemDto>> GetMattersAsync(
@@ -231,5 +234,50 @@ public class MatterService : IMatterService
             IsConfidential = updated.IsConfidential,
             CreatedAt = updated.CreatedAt
         };
+    }
+
+    public async Task<MatterNoteDto> AddMatterNoteAsync(int matterId, CreateMatterNoteDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        var note = new MatterNote
+        {
+            MatterId = matterId,
+            NoteTitle = dto.NoteTitle,
+            NoteContent = dto.NoteContent,
+            NoteType = dto.NoteType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var savedNote = await _matterNoteRepository.AddAsync(note);
+
+        return new MatterNoteDto
+        {
+            MatterNoteId = savedNote.MatterNoteId,
+            MatterId = savedNote.MatterId,
+            NoteTitle = savedNote.NoteTitle,
+            NoteContent = savedNote.NoteContent,
+            NoteType = savedNote.NoteType,
+            CreatedAt = savedNote.CreatedAt
+        };
+    }
+
+    public async Task<List<MatterNoteDto>> GetMatterNotesAsync(int matterId)
+    {
+        var notes = await _matterNoteRepository.GetByMatterIdAsync(matterId);
+
+        return notes.Select(n => new MatterNoteDto
+        {
+            MatterNoteId = n.MatterNoteId,
+            MatterId = n.MatterId,
+            NoteTitle = n.NoteTitle,
+            NoteContent = n.NoteContent,
+            NoteType = n.NoteType,
+            CreatedAt = n.CreatedAt
+        }).ToList();
     }
 }

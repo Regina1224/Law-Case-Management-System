@@ -5,6 +5,11 @@ import {
   updateMatter,
   type MatterDetail,
 } from "../services/matterService";
+import {
+  getMatterNotes,
+  createMatterNote,
+  type MatterNote,
+} from "../services/matterNoteService";
 
 const MATTER_STATUSES = [
   "Draft",
@@ -34,6 +39,13 @@ const MatterDetailPage = () => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Notes
+  const [notes, setNotes] = useState<MatterNote[]>([]);
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteContent, setNoteContent] = useState("");
+  const [noteType, setNoteType] = useState("");
+  const [addingNote, setAddingNote] = useState(false);
+
   useEffect(() => {
     const fetchMatter = async () => {
       setLoading(true);
@@ -56,6 +68,42 @@ const MatterDetailPage = () => {
     };
     fetchMatter();
   }, [matterId]);
+
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const result = await getMatterNotes(matterId);
+        setNotes(result);
+      } catch {
+        // Failure to load notes does not affect the display of the main details page
+      }
+    };
+    fetchNotes();
+  }, [matterId]);
+
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingNote(true);
+
+    try {
+      await createMatterNote(matterId, {
+        noteTitle,
+        noteContent,
+        noteType: noteType || undefined,
+      });
+
+      const result = await getMatterNotes(matterId);
+      setNotes(result);
+
+      setNoteTitle("");
+      setNoteContent("");
+      setNoteType("");
+    } catch {
+      // A dedicated noteError state could be added to display the error; keeping it simple for now.
+    } finally {
+      setAddingNote(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,6 +254,58 @@ const MatterDetailPage = () => {
 
           <button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </form>
+      </section>
+
+      {/* Notes */}
+      <section>
+        <h2>Notes</h2>
+
+        {notes.length === 0 ? (
+          <p>No notes yet.</p>
+        ) : (
+          <div>
+            {notes.map((note) => (
+              <div key={note.matterNoteId}>
+                <h4>{note.noteTitle}</h4>
+                <p>{note.noteContent}</p>
+                <small>
+                  {note.noteType} — {new Date(note.createdAt).toLocaleString()}
+                </small>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <h3>Add Note</h3>
+        <form onSubmit={handleAddNote}>
+          <div>
+            <label>Note Title</label>
+            <input
+              value={noteTitle}
+              onChange={(e) => setNoteTitle(e.target.value)}
+            />
+          </div>
+          <div>
+            <label>Note Type</label>
+            <select value={noteType} onChange={(e) => setNoteType(e.target.value)}>
+              <option value="">-- None --</option>
+              <option value="File Note">File Note</option>
+              <option value="Client Call">Client Call</option>
+              <option value="Meeting Note">Meeting Note</option>
+              <option value="Internal Update">Internal Update</option>
+            </select>
+          </div>
+          <div>
+            <label>Note Content</label>
+            <input
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+            />
+          </div>
+          <button type="submit" disabled={addingNote}>
+            {addingNote ? "Adding..." : "Add Note"}
           </button>
         </form>
       </section>
