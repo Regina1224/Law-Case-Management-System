@@ -14,6 +14,7 @@ public class MatterService : IMatterService
     private readonly IPracticeAreaRepository _practiceAreaRepository;
     private readonly IMatterNoteRepository _matterNoteRepository;
     private readonly IMatterRelatedPartyRepository _matterRelatedPartyRepository;
+    private readonly IMatterTaskRepository _matterTaskRepository;
 
     public MatterService(
         IMatterRepository matterRepository,
@@ -21,7 +22,8 @@ public class MatterService : IMatterService
         IMatterTypeRepository matterTypeRepository,
         IPracticeAreaRepository practiceAreaRepository,
         IMatterNoteRepository matterNoteRepository,
-        IMatterRelatedPartyRepository matterRelatedPartyRepository)
+        IMatterRelatedPartyRepository matterRelatedPartyRepository,
+        IMatterTaskRepository matterTaskRepository)
     {
         _matterRepository = matterRepository;
         _clientRepository = clientRepository;
@@ -29,6 +31,7 @@ public class MatterService : IMatterService
         _practiceAreaRepository = practiceAreaRepository;
         _matterNoteRepository = matterNoteRepository;
         _matterRelatedPartyRepository = matterRelatedPartyRepository;
+        _matterTaskRepository = matterTaskRepository;
     }
 
     public async Task<PagedResultDto<MatterListItemDto>> GetMattersAsync(
@@ -371,5 +374,24 @@ public class MatterService : IMatterService
             Notes = party.Notes,
             CreatedAt = party.CreatedAt
         };
+    }
+
+    public async Task<List<MatterTaskListItemDto>> GetMatterTasksAsync(
+        int matterId, string? status, string? assignedTo, string? priority)
+    {
+        var tasks = await _matterTaskRepository.GetFilteredAsync(matterId, status, assignedTo, priority);
+
+        return tasks.Select(t => new MatterTaskListItemDto
+        {
+            MatterTaskId = t.MatterTaskId,
+            MatterId = t.MatterId,
+            Title = t.Title,
+            AssignedTo = t.AssignedTo,
+            Priority = t.Priority,
+            Status = t.Status,
+            DueDate = t.DueDate,
+            CreatedBy = t.CreatedBy,
+            CreatedAt = t.CreatedAt
+        }).ToList();
     }
 }

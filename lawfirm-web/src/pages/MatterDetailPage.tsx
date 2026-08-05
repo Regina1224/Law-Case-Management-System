@@ -17,6 +17,10 @@ import {
   deactivateMatterRelatedParty,
   type MatterRelatedParty,
 } from "../services/matterRelatedPartyService";
+import {
+  getMatterTasks,
+  type MatterTaskListItem,
+} from "../services/matterTaskService";
 
 const MATTER_STATUSES = [
   "Draft",
@@ -28,6 +32,20 @@ const MATTER_STATUSES = [
   "Closed",
   "Archived",
 ];
+
+const TASK_STATUSES = [
+  "Not Started",
+  "In Progress",
+  "Waiting on Client",
+  "Waiting on External Party",
+  "Completed",
+  "Cancelled",
+];
+
+const isTaskOverdue = (task: MatterTaskListItem) =>
+  task.status !== "Completed" &&
+  task.status !== "Cancelled" &&
+  new Date(task.dueDate) < new Date();
 
 const MatterDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,6 +83,12 @@ const MatterDetailPage = () => {
   const [partyNotes, setPartyNotes] = useState("");
   const [savingParty, setSavingParty] = useState(false);
   const [partyError, setPartyError] = useState<string | null>(null);
+
+  // Tasks
+  const [tasks, setTasks] = useState<MatterTaskListItem[]>([]);
+  const [taskStatusFilter, setTaskStatusFilter] = useState("");
+  const [taskAssignedToFilter, setTaskAssignedToFilter] = useState("");
+  const [taskPriorityFilter, setTaskPriorityFilter] = useState("");
 
   useEffect(() => {
     const fetchMatter = async () => {
@@ -112,6 +136,22 @@ const MatterDetailPage = () => {
     };
     fetchParties();
   }, [matterId]);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const result = await getMatterTasks(matterId, {
+          status: taskStatusFilter || undefined,
+          assignedTo: taskAssignedToFilter || undefined,
+          priority: taskPriorityFilter || undefined,
+        });
+        setTasks(result);
+      } catch {
+        // Failure to load tasks does not affect the display of the main details page
+      }
+    };
+    fetchTasks();
+  }, [matterId, taskStatusFilter, taskAssignedToFilter, taskPriorityFilter]);
 
   const resetPartyForm = () => {
     setEditingPartyId(null);
@@ -523,6 +563,78 @@ const MatterDetailPage = () => {
             </button>
           )}
         </form>
+      </section>
+
+      {/* Tasks */}
+      <section>
+        <h2>Tasks</h2>
+
+        <div>
+          <label>Status</label>
+          <select
+            value={taskStatusFilter}
+            onChange={(e) => setTaskStatusFilter(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            {TASK_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+
+          <label>Assigned To</label>
+          <input
+            value={taskAssignedToFilter}
+            onChange={(e) => setTaskAssignedToFilter(e.target.value)}
+            placeholder="Filter by assignee"
+          />
+
+          <label>Priority</label>
+          <select
+            value={taskPriorityFilter}
+            onChange={(e) => setTaskPriorityFilter(e.target.value)}
+          >
+            <option value="">All Priorities</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
+        </div>
+
+        {tasks.length === 0 ? (
+          <p>No tasks found.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Assigned To</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Due Date</th>
+                <th>Created By</th>
+                <th>Created Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tasks.map((task) => (
+                <tr key={task.matterTaskId}>
+                  <td>{task.title}</td>
+                  <td>{task.assignedTo ?? "-"}</td>
+                  <td>{task.priority}</td>
+                  <td>{task.status}</td>
+                  <td style={{ color: isTaskOverdue(task) ? "red" : undefined }}>
+                    {new Date(task.dueDate).toLocaleDateString()}
+                    {isTaskOverdue(task) ? " (Overdue)" : ""}
+                  </td>
+                  <td>{task.createdBy ?? "-"}</td>
+                  <td>{new Date(task.createdAt).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </div>
   );

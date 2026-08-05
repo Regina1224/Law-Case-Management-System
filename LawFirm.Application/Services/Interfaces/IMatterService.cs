@@ -27,4 +27,7 @@ public interface IMatterService
     Task<MatterRelatedPartyDto> UpdateMatterRelatedPartyAsync(int matterId, int partyId, UpdateMatterRelatedPartyDto dto);
 
     Task<MatterRelatedPartyDto> DeactivateMatterRelatedPartyAsync(int matterId, int partyId);
+
+    Task<List<MatterTaskListItemDto>> GetMatterTasksAsync(
+        int matterId, string? status, string? assignedTo, string? priority);
 }

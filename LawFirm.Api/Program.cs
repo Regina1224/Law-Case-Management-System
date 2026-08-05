@@ -62,6 +62,8 @@ builder.Services.AddScoped<IMatterService, MatterService>();
 builder.Services.AddScoped<IMatterNoteRepository, MatterNoteRepository>();
 // Matter related party
 builder.Services.AddScoped<IMatterRelatedPartyRepository, MatterRelatedPartyRepository>();
+// Matter task
+builder.Services.AddScoped<IMatterTaskRepository, MatterTaskRepository>();
 
 
 var app = builder.Build();
