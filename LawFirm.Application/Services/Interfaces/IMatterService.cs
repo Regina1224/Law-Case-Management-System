@@ -11,4 +11,6 @@ public interface IMatterService
         int page, int pageSize);
 
     Task<MatterListItemDto> CreateMatterAsync(CreateMatterDto dto);
+
+    Task<MatterDetailDto> GetMatterByIdAsync(int id);
 }

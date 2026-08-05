@@ -65,6 +65,16 @@ public class MatterRepository : IMatterRepository
         return (items, totalCount);
     }
 
+    public async Task<Matter?> GetByIdAsync(int id)
+    {
+        return await _dbContext.Matters
+            .Include(m => m.Client)
+            .Include(m => m.MatterType)
+            .Include(m => m.PracticeArea)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.MatterId == id);
+    }
+
     public async Task<Matter> AddAsync(Matter matter)
     {
         await _dbContext.Matters.AddAsync(matter);
