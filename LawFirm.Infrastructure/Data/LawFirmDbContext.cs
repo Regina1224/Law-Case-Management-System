@@ -13,6 +13,7 @@ public class LawFirmDbContext : DbContext
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<MatterType> MatterTypes => Set<MatterType>();
     public DbSet<Matter> Matters => Set<Matter>();
+    public DbSet<MatterNote> MatterNotes => Set<MatterNote>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -36,4 +36,6 @@ public class Matter
     public string? CreatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }
+
+    public ICollection<MatterNote> MatterNotes { get; set; } = new List<MatterNote>();
 }
