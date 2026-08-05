@@ -17,4 +17,6 @@ public class IntakeDetailDto
     public DateTime? ConsultationDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public int? ConvertedClientId { get; set; }
+    public int? ConvertedMatterId { get; set; }
 }

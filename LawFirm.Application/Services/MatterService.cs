@@ -58,9 +58,30 @@ public class MatterService : IMatterService
         };
     }
 
-    // MAT-02 will rebuild
     public async Task<MatterListItemDto> CreateMatterAsync(CreateMatterDto dto)
     {
+        
+        if (string.IsNullOrWhiteSpace(dto.MatterTitle))
+        {
+            throw new ArgumentException("Matter title is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.ResponsibleLawyer))
+        {
+            throw new ArgumentException("Responsible lawyer is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Summary))
+        {
+            throw new ArgumentException("Matter summary is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Status))
+        {
+            throw new ArgumentException("Status is required.");
+        }
+
+        
         var client = await _clientRepository.GetByIdAsync(dto.ClientId);
         if (client == null)
         {
@@ -70,7 +91,7 @@ public class MatterService : IMatterService
         var matterType = await _matterTypeRepository.GetByIdAsync(dto.MatterTypeId);
         if (matterType == null)
         {
-            throw new KeyNotFoundException($"MatterType with id {dto.MatterTypeId} was not found.");
+            throw new KeyNotFoundException($"Matter type with id {dto.MatterTypeId} was not found.");
         }
 
         var practiceArea = await _practiceAreaRepository.GetByIdAsync(dto.PracticeAreaId);
@@ -79,9 +100,11 @@ public class MatterService : IMatterService
             throw new KeyNotFoundException($"Practice area with id {dto.PracticeAreaId} was not found.");
         }
 
+        
         var totalCount = await _matterRepository.GetTotalCountAsync();
         var matterNumber = $"MAT-{(totalCount + 1):D4}";
 
+        
         var matter = new Matter
         {
             MatterNumber = matterNumber,
@@ -90,15 +113,19 @@ public class MatterService : IMatterService
             MatterTypeId = dto.MatterTypeId,
             PracticeAreaId = dto.PracticeAreaId,
             ResponsibleLawyer = dto.ResponsibleLawyer,
+            SupportingStaff = dto.SupportingStaff,
             Status = dto.Status,
             Priority = dto.Priority,
             Summary = dto.Summary,
-            OpenedDate = DateTime.UtcNow,
+            OpenedDate = dto.OpenedDate,
+            TargetCloseDate = dto.TargetCloseDate,
+            IsConfidential = dto.IsConfidential,
             CreatedAt = DateTime.UtcNow
         };
 
         var saved = await _matterRepository.AddAsync(matter);
 
+        // 5. 映射返回（复用第 2 步已查出的对象，避免重复查询）
         return new MatterListItemDto
         {
             MatterId = saved.MatterId,
@@ -114,5 +141,6 @@ public class MatterService : IMatterService
             Priority = saved.Priority,
             OpenedDate = saved.OpenedDate
         };
+
     }
 }

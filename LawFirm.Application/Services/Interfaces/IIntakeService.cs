@@ -13,4 +13,6 @@ public interface IIntakeService
 
     Task<IntakeDetailDto> UpdateIntakeAsync(int id, UpdateIntakeDto dto);
 
+    Task<ConvertIntakeResultDto> ConvertIntakeAsync(int id, ConvertIntakeDto dto);
+
 }

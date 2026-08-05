@@ -49,6 +49,13 @@ public class LawFirmDbContext : DbContext
             .WithMany()
             .HasForeignKey(m => m.PracticeAreaId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Matter>()
+            .HasOne(m => m.SourceIntake)
+            .WithMany()
+            .HasForeignKey(m => m.SourceIntakeId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
     }
 
 

@@ -21,6 +21,10 @@ namespace LawFirm.Domain.Entities;
         public string Status { get; set; } = "New";
         public DateTime? ConsultationDate { get; set; }
 
+        // Set when this intake is converted (INT-04); no FK enforced, same pattern as AssignedReviewer.
+        public int? ConvertedClientId { get; set; }
+        public int? ConvertedMatterId { get; set; }
+
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
 

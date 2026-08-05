@@ -1,17 +1,23 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   getIntakeById,
   updateIntake,
   getIntakeDocuments,
   uploadIntakeDocument,
   getDocumentDownloadUrl,
+  convertIntake,
   type IntakeDetail,
   type IntakeDocument,
+  type ConvertIntakeResult,
 } from "../services/intakeService";
 import practiceAreaService, {
   type PracticeAreaDto,
 } from "../services/practiceAreaService";
+import { getClients, type ClientListItem } from "../services/clientService";
+import matterTypeService, {
+  type MatterTypeDto,
+} from "../services/matterTypeService";
 
 const IntakeDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +44,37 @@ const IntakeDetailPage = () => {
   const [uploadCategory, setUploadCategory] = useState("Engagement Documents");
   const [uploadDescription, setUploadDescription] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  // Convert to Client and Matter form status
+  const [showConvertForm, setShowConvertForm] = useState(false);
+  const [converting, setConverting] = useState(false);
+  const [convertError, setConvertError] = useState<string | null>(null);
+  const [convertResult, setConvertResult] = useState<ConvertIntakeResult | null>(null);
+
+  const [clients, setClients] = useState<ClientListItem[]>([]);
+  const [matterTypes, setMatterTypes] = useState<MatterTypeDto[]>([]);
+  const [convertOptionsLoaded, setConvertOptionsLoaded] = useState(false);
+
+  const [clientMode, setClientMode] = useState<"new" | "existing">("new");
+  const [existingClientId, setExistingClientId] = useState<number | "">("");
+  const [clientType, setClientType] = useState("Individual");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
+  const [convertEmail, setConvertEmail] = useState("");
+  const [convertPhone, setConvertPhone] = useState("");
+
+  const [matterTitle, setMatterTitle] = useState("");
+  const [matterTypeId, setMatterTypeId] = useState<number | "">("");
+  const [responsibleLawyer, setResponsibleLawyer] = useState("");
+  const [supportingStaff, setSupportingStaff] = useState("");
+  const [matterStatus, setMatterStatus] = useState("Draft");
+  const [priority, setPriority] = useState("Medium");
+  const [openedDate, setOpenedDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [targetCloseDate, setTargetCloseDate] = useState("");
+  const [isConfidential, setIsConfidential] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -149,6 +186,98 @@ const IntakeDetailPage = () => {
       setError("Failed to upload document.");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const openConvertForm = async () => {
+    if (!intake) return;
+
+    // Naive split of "First Last" into first/last name to save typing; user can edit.
+    const nameParts = intake.prospectiveClientName.trim().split(/\s+/);
+    setFirstName(nameParts.slice(0, -1).join(" ") || nameParts[0] || "");
+    setLastName(nameParts.length > 1 ? nameParts[nameParts.length - 1] : "");
+    setOrganizationName(intake.prospectiveClientName);
+    setClientType(intake.intendedClientType || "Individual");
+    setConvertEmail(intake.primaryEmail ?? "");
+    setConvertPhone(intake.primaryPhone ?? "");
+    setResponsibleLawyer(intake.assignedReviewer ?? "");
+    setPriority(intake.urgency ?? "Medium");
+
+    setConvertError(null);
+    setShowConvertForm(true);
+
+    if (!convertOptionsLoaded) {
+      try {
+        const [clientsRes, matterTypesRes] = await Promise.all([
+          getClients({ pageSize: 1000 }),
+          matterTypeService.getAll(),
+        ]);
+        setClients(clientsRes.items);
+        setMatterTypes(matterTypesRes.data.data);
+        setConvertOptionsLoaded(true);
+      } catch {
+        setConvertError("Failed to load client/matter type options.");
+      }
+    }
+  };
+
+  const handleConvertSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setConvertError(null);
+
+    if (!matterTitle || !matterTypeId || !responsibleLawyer || !matterStatus || !openedDate) {
+      setConvertError("Please fill in all required matter fields.");
+      return;
+    }
+
+    if (clientMode === "existing") {
+      if (!existingClientId) {
+        setConvertError("Please select a client.");
+        return;
+      }
+    } else if (clientType === "Individual") {
+      if (!firstName || !lastName) {
+        setConvertError("First name and last name are required for individual client.");
+        return;
+      }
+    } else if (!organizationName) {
+      setConvertError("Organization name is required for corporate client.");
+      return;
+    }
+
+    setConverting(true);
+
+    try {
+      const result = await convertIntake(intakeId, {
+        existingClientId: clientMode === "existing" ? Number(existingClientId) : undefined,
+        clientType: clientMode === "new" ? clientType : undefined,
+        firstName: clientMode === "new" && clientType === "Individual" ? firstName : undefined,
+        lastName: clientMode === "new" && clientType === "Individual" ? lastName : undefined,
+        organizationName:
+          clientMode === "new" && clientType === "Corporate" ? organizationName : undefined,
+        email: clientMode === "new" ? convertEmail || undefined : undefined,
+        phone: clientMode === "new" ? convertPhone || undefined : undefined,
+        matterTitle,
+        matterTypeId: Number(matterTypeId),
+        responsibleLawyer,
+        supportingStaff: supportingStaff || undefined,
+        status: matterStatus,
+        priority: priority || undefined,
+        openedDate,
+        targetCloseDate: targetCloseDate || undefined,
+        isConfidential,
+      });
+
+      setConvertResult(result);
+      setShowConvertForm(false);
+
+      const refreshed = await getIntakeById(intakeId);
+      setIntake(refreshed);
+      setStatus(refreshed.status);
+    } catch {
+      setConvertError("Failed to convert intake. Please check your input.");
+    } finally {
+      setConverting(false);
     }
   };
 
@@ -266,11 +395,228 @@ const IntakeDetailPage = () => {
           >
             Mark as Declined
           </button>
+        </form>
+      </section>
 
-          <button type="button" disabled title="Requires Matter module (INT-04)">
+      {/* Convert to Client and Matter */}
+      <section>
+        <h2>Convert to Client and Matter</h2>
+
+        {isConverted ? (
+          <div>
+            <p>This intake has been converted.</p>
+            {convertResult ? (
+              <p>
+                Created client <strong>{convertResult.clientCode}</strong> and matter{" "}
+                <strong>{convertResult.matterNumber}</strong>.{" "}
+                <Link to={`/clients/${convertResult.clientId}`}>View Client</Link>{" "}
+                | <Link to="/matters">View Matters</Link>
+              </p>
+            ) : (
+              intake.convertedClientId && (
+                <p>
+                  <Link to={`/clients/${intake.convertedClientId}`}>View Client</Link>{" "}
+                  | <Link to="/matters">View Matters</Link>
+                </p>
+              )
+            )}
+          </div>
+        ) : !showConvertForm ? (
+          <button type="button" onClick={openConvertForm}>
             Convert to Client and Matter
           </button>
-        </form>
+        ) : (
+          <form onSubmit={handleConvertSubmit}>
+            {convertError && <p style={{ color: "red" }}>{convertError}</p>}
+
+            <div>
+              <label>
+                <input
+                  type="radio"
+                  checked={clientMode === "new"}
+                  onChange={() => setClientMode("new")}
+                />
+                New Client
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={clientMode === "existing"}
+                  onChange={() => setClientMode("existing")}
+                />
+                Existing Client
+              </label>
+            </div>
+
+            {clientMode === "existing" ? (
+              <div>
+                <label>Client</label>
+                <select
+                  value={existingClientId}
+                  onChange={(e) =>
+                    setExistingClientId(e.target.value ? Number(e.target.value) : "")
+                  }
+                >
+                  <option value="">-- Select Client --</option>
+                  {clients.map((c) => (
+                    <option key={c.clientId} value={c.clientId}>
+                      {c.clientName} ({c.clientCode})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label>Client Type</label>
+                  <select
+                    value={clientType}
+                    onChange={(e) => setClientType(e.target.value)}
+                  >
+                    <option value="Individual">Individual</option>
+                    <option value="Corporate">Corporate</option>
+                  </select>
+                </div>
+
+                {clientType === "Individual" ? (
+                  <div>
+                    <label>First Name</label>
+                    <input
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                    <label>Last Name</label>
+                    <input
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label>Organization Name</label>
+                    <input
+                      value={organizationName}
+                      onChange={(e) => setOrganizationName(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label>Email</label>
+                  <input
+                    value={convertEmail}
+                    onChange={(e) => setConvertEmail(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label>Phone</label>
+                  <input
+                    value={convertPhone}
+                    onChange={(e) => setConvertPhone(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+
+            <div>
+              <label>Matter Title</label>
+              <input
+                value={matterTitle}
+                onChange={(e) => setMatterTitle(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label>Matter Type</label>
+              <select
+                value={matterTypeId}
+                onChange={(e) =>
+                  setMatterTypeId(e.target.value ? Number(e.target.value) : "")
+                }
+              >
+                <option value="">-- Select Matter Type --</option>
+                {matterTypes.map((mt) => (
+                  <option key={mt.id} value={mt.id}>
+                    {mt.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Responsible Lawyer</label>
+              <input
+                value={responsibleLawyer}
+                onChange={(e) => setResponsibleLawyer(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label>Supporting Staff</label>
+              <input
+                value={supportingStaff}
+                onChange={(e) => setSupportingStaff(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label>Status</label>
+              <select
+                value={matterStatus}
+                onChange={(e) => setMatterStatus(e.target.value)}
+              >
+                <option value="Draft">Draft</option>
+                <option value="Open">Open</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Priority</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Opened Date</label>
+              <input
+                type="date"
+                value={openedDate}
+                onChange={(e) => setOpenedDate(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label>Target Close Date</label>
+              <input
+                type="date"
+                value={targetCloseDate}
+                onChange={(e) => setTargetCloseDate(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={isConfidential}
+                  onChange={(e) => setIsConfidential(e.target.checked)}
+                />
+                Confidential
+              </label>
+            </div>
+
+            <button type="submit" disabled={converting}>
+              {converting ? "Converting..." : "Convert"}
+            </button>
+            <button type="button" onClick={() => setShowConvertForm(false)}>
+              Cancel
+            </button>
+          </form>
+        )}
       </section>
 
       {/* Doclument Area */}

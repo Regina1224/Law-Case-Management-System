@@ -56,6 +56,43 @@ export interface IntakeDetail {
   consultationDate: string | null;
   status: string;
   createdAt: string;
+  convertedClientId: number | null;
+  convertedMatterId: number | null;
+}
+
+// Convert Intake request body type
+export interface ConvertIntakeDto {
+  // Set to reuse an existing client; omit to create a new one from the fields below.
+  existingClientId?: number;
+
+  clientType?: string; // "Individual" or "Corporate"
+  firstName?: string;
+  lastName?: string;
+  organizationName?: string;
+  email?: string;
+  phone?: string;
+
+  matterTitle: string;
+  matterTypeId: number;
+  responsibleLawyer: string;
+  supportingStaff?: string;
+  status: string;
+  priority?: string;
+  openedDate: string;
+  targetCloseDate?: string;
+  isConfidential: boolean;
+}
+
+export interface ConvertIntakeResult {
+  intakeId: number;
+  intakeCode: string;
+  intakeStatus: string;
+  clientId: number;
+  clientCode: string;
+  clientName: string;
+  matterId: number;
+  matterNumber: string;
+  matterTitle: string;
 }
 
 // Update Intake request body type
@@ -106,6 +143,15 @@ export const updateIntake = async (
   dto: UpdateIntakeDto
 ): Promise<IntakeDetail> => {
   const response = await apiClient.put(`/intakes/${id}`, dto);
+  return response.data.data;
+};
+
+// Convert Intake into a Client and Matter
+export const convertIntake = async (
+  id: number,
+  dto: ConvertIntakeDto
+): Promise<ConvertIntakeResult> => {
+  const response = await apiClient.post(`/intakes/${id}/convert`, dto);
   return response.data.data;
 };
 
