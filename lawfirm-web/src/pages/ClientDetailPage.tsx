@@ -4,6 +4,7 @@ import { getClientById, type ClientDetail } from "../services/clientService";
 import {
   createClientContact,
   getClientContacts,
+  deactivateClientContact,
   type ClientContact,
 } from "../services/clientContactService";
 import {
@@ -89,6 +90,16 @@ const ClientDetailPage = () => {
     }
   };
 
+  const handleDeactivateContact = async (contactId: number) => {
+    try {
+      await deactivateClientContact(Number(id), contactId);
+      const result = await getClientContacts(Number(id));
+      setContacts(result);
+    } catch {
+      // A dedicated contactError state could be added to display the error; for now, we'll handle it simply.
+    }
+  };
+
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddingNote(true);
@@ -147,6 +158,7 @@ const ClientDetailPage = () => {
               <th>Relationship</th>
               <th>Email</th>
               <th>Phone</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -156,6 +168,14 @@ const ClientDetailPage = () => {
                 <td>{contact.relationshipType}</td>
                 <td>{contact.email}</td>
                 <td>{contact.phone}</td>
+                <td>
+                  <button
+                    type="button"
+                    onClick={() => handleDeactivateContact(contact.clientContactId)}
+                  >
+                    Deactivate
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

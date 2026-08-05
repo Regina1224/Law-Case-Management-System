@@ -293,6 +293,31 @@ public class ClientService : IClientService
         }).ToList();
     }
 
+    public async Task<ClientContactDto> DeactivateClientContactAsync(int clientId, int contactId)
+    {
+        var contact = await _clientContactRepository.GetByIdAsync(contactId);
+        if (contact == null || contact.ClientId != clientId)
+        {
+            throw new KeyNotFoundException($"Contact with id {contactId} was not found for client {clientId}.");
+        }
+
+        contact.IsActive = false;
+        var updated = await _clientContactRepository.UpdateAsync(contact);
+
+        return new ClientContactDto
+        {
+            ClientContactId = updated!.ClientContactId,
+            ClientId = updated.ClientId,
+            ContactName = updated.ContactName,
+            RelationshipType = updated.RelationshipType,
+            Email = updated.Email,
+            Phone = updated.Phone,
+            Company = updated.Company,
+            Notes = updated.Notes,
+            CreatedAt = updated.CreatedAt
+        };
+    }
+
     public async Task<ClientNoteDto> AddClientNoteAsync(int clientId, CreateClientNoteDto dto)
     {
         var client = await _clientRepository.GetByIdAsync(clientId);

@@ -31,5 +31,12 @@ namespace LawFirm.Api.Controllers
             var result = await _clientService.AddClientContactAsync(clientId, dto);
             return Ok(ApiResponse<ClientContactDto>.Ok(result));
         }
+
+        [HttpPut("{id}/deactivate")]
+        public async Task<IActionResult> DeactivateContact(int clientId, int id)
+        {
+            var result = await _clientService.DeactivateClientContactAsync(clientId, id);
+            return Ok(ApiResponse<ClientContactDto>.Ok(result));
+        }
     }
 }
