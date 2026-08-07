@@ -30,4 +30,6 @@ public interface IMatterService
 
     Task<List<MatterTaskListItemDto>> GetMatterTasksAsync(
         int matterId, string? status, string? assignedTo, string? priority);
+
+    Task<MatterTaskListItemDto> AddMatterTaskAsync(int matterId, CreateMatterTaskDto dto);
 }

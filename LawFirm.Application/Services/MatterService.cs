@@ -394,4 +394,55 @@ public class MatterService : IMatterService
             CreatedAt = t.CreatedAt
         }).ToList();
     }
+
+    public async Task<MatterTaskListItemDto> AddMatterTaskAsync(int matterId, CreateMatterTaskDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            throw new ArgumentException("Task title is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.AssignedTo))
+        {
+            throw new ArgumentException("Assigned to is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Priority))
+        {
+            throw new ArgumentException("Priority is required.");
+        }
+
+        var task = new MatterTask
+        {
+            MatterId = matterId,
+            Title = dto.Title,
+            Description = dto.Description,
+            AssignedTo = dto.AssignedTo,
+            Priority = dto.Priority,
+            Status = "Not Started",
+            DueDate = dto.DueDate,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var saved = await _matterTaskRepository.AddAsync(task);
+
+        return new MatterTaskListItemDto
+        {
+            MatterTaskId = saved.MatterTaskId,
+            MatterId = saved.MatterId,
+            Title = saved.Title,
+            AssignedTo = saved.AssignedTo,
+            Priority = saved.Priority,
+            Status = saved.Status,
+            DueDate = saved.DueDate,
+            CreatedBy = saved.CreatedBy,
+            CreatedAt = saved.CreatedAt
+        };
+    }
 }

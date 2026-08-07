@@ -27,3 +27,19 @@ export const getMatterTasks = async (
   });
   return response.data.data;
 };
+
+export interface CreateMatterTaskDto {
+  title: string;
+  description?: string;
+  assignedTo: string;
+  priority: string;
+  dueDate: string;
+}
+
+export const createMatterTask = async (
+  matterId: number,
+  dto: CreateMatterTaskDto
+): Promise<MatterTaskListItem> => {
+  const response = await apiClient.post(`/matters/${matterId}/tasks`, dto);
+  return response.data.data;
+};
