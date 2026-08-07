@@ -522,4 +522,56 @@ public class MatterService : IMatterService
             Status = d.Status
         }).ToList();
     }
+
+    public async Task<MatterDeadlineListItemDto> AddMatterDeadlineAsync(int matterId, CreateMatterDeadlineDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            throw new ArgumentException("Title is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.DeadlineType))
+        {
+            throw new ArgumentException("Deadline type is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.ResponsiblePerson))
+        {
+            throw new ArgumentException("Responsible person is required.");
+        }
+
+        var deadline = new MatterDeadline
+        {
+            MatterId = matterId,
+            Title = dto.Title,
+            DeadlineType = dto.DeadlineType,
+            DueDateTime = dto.DueDateTime,
+            ResponsiblePerson = dto.ResponsiblePerson,
+            LocationOrCourt = dto.LocationOrCourt,
+            Notes = dto.Notes,
+            Status = "Scheduled",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var saved = await _matterDeadlineRepository.AddAsync(deadline);
+
+        return new MatterDeadlineListItemDto
+        {
+            MatterDeadlineId = saved.MatterDeadlineId,
+            MatterId = saved.MatterId,
+            Title = saved.Title,
+            DeadlineType = saved.DeadlineType,
+            DueDateTime = saved.DueDateTime,
+            ResponsiblePerson = saved.ResponsiblePerson,
+            LocationOrCourt = saved.LocationOrCourt,
+            Notes = saved.Notes,
+            Status = saved.Status
+        };
+    }
 }
