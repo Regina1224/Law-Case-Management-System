@@ -34,4 +34,6 @@ public interface IMatterService
     Task<MatterTaskListItemDto> AddMatterTaskAsync(int matterId, CreateMatterTaskDto dto);
 
     Task<MatterTaskListItemDto> UpdateMatterTaskAsync(int matterId, int taskId, UpdateMatterTaskDto dto);
+
+    Task<List<MatterDeadlineListItemDto>> GetMatterDeadlinesAsync(int matterId);
 }

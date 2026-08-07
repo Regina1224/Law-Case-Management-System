@@ -15,6 +15,7 @@ public class MatterService : IMatterService
     private readonly IMatterNoteRepository _matterNoteRepository;
     private readonly IMatterRelatedPartyRepository _matterRelatedPartyRepository;
     private readonly IMatterTaskRepository _matterTaskRepository;
+    private readonly IMatterDeadlineRepository _matterDeadlineRepository;
 
     public MatterService(
         IMatterRepository matterRepository,
@@ -23,7 +24,8 @@ public class MatterService : IMatterService
         IPracticeAreaRepository practiceAreaRepository,
         IMatterNoteRepository matterNoteRepository,
         IMatterRelatedPartyRepository matterRelatedPartyRepository,
-        IMatterTaskRepository matterTaskRepository)
+        IMatterTaskRepository matterTaskRepository,
+        IMatterDeadlineRepository matterDeadlineRepository)
     {
         _matterRepository = matterRepository;
         _clientRepository = clientRepository;
@@ -32,6 +34,7 @@ public class MatterService : IMatterService
         _matterNoteRepository = matterNoteRepository;
         _matterRelatedPartyRepository = matterRelatedPartyRepository;
         _matterTaskRepository = matterTaskRepository;
+        _matterDeadlineRepository = matterDeadlineRepository;
     }
 
     public async Task<PagedResultDto<MatterListItemDto>> GetMattersAsync(
@@ -500,5 +503,23 @@ public class MatterService : IMatterService
             CreatedBy = updated.CreatedBy,
             CreatedAt = updated.CreatedAt
         };
+    }
+
+    public async Task<List<MatterDeadlineListItemDto>> GetMatterDeadlinesAsync(int matterId)
+    {
+        var deadlines = await _matterDeadlineRepository.GetByMatterIdAsync(matterId);
+
+        return deadlines.Select(d => new MatterDeadlineListItemDto
+        {
+            MatterDeadlineId = d.MatterDeadlineId,
+            MatterId = d.MatterId,
+            Title = d.Title,
+            DeadlineType = d.DeadlineType,
+            DueDateTime = d.DueDateTime,
+            ResponsiblePerson = d.ResponsiblePerson,
+            LocationOrCourt = d.LocationOrCourt,
+            Notes = d.Notes,
+            Status = d.Status
+        }).ToList();
     }
 }

@@ -40,4 +40,5 @@ public class Matter
     public ICollection<MatterNote> MatterNotes { get; set; } = new List<MatterNote>();
     public ICollection<MatterRelatedParty> MatterRelatedParties { get; set; } = new List<MatterRelatedParty>();
     public ICollection<MatterTask> MatterTasks { get; set; } = new List<MatterTask>();
+    public ICollection<MatterDeadline> MatterDeadlines { get; set; } = new List<MatterDeadline>();
 }
