@@ -23,6 +23,10 @@ import {
   updateMatterTask,
   type MatterTaskListItem,
 } from "../services/matterTaskService";
+import {
+  getMatterDeadlines,
+  type MatterDeadlineListItem,
+} from "../services/matterDeadlineService";
 
 const MATTER_STATUSES = [
   "Draft",
@@ -48,6 +52,9 @@ const isTaskOverdue = (task: MatterTaskListItem) =>
   task.status !== "Completed" &&
   task.status !== "Cancelled" &&
   new Date(task.dueDate) < new Date();
+
+const isDeadlinePassed = (deadline: MatterDeadlineListItem) =>
+  deadline.status === "Scheduled" && new Date(deadline.dueDateTime) < new Date();
 
 const MatterDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -100,6 +107,9 @@ const MatterDetailPage = () => {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [addingTask, setAddingTask] = useState(false);
   const [taskError, setTaskError] = useState<string | null>(null);
+
+  // Deadlines
+  const [deadlines, setDeadlines] = useState<MatterDeadlineListItem[]>([]);
 
   useEffect(() => {
     const fetchMatter = async () => {
@@ -163,6 +173,18 @@ const MatterDetailPage = () => {
     };
     fetchTasks();
   }, [matterId, taskStatusFilter, taskAssignedToFilter, taskPriorityFilter]);
+
+  useEffect(() => {
+    const fetchDeadlines = async () => {
+      try {
+        const result = await getMatterDeadlines(matterId);
+        setDeadlines(result);
+      } catch {
+        // Failure to load deadlines does not affect the display of the main details page
+      }
+    };
+    fetchDeadlines();
+  }, [matterId]);
 
   const resetTaskForm = () => {
     setEditingTaskId(null);
@@ -826,6 +848,43 @@ const MatterDetailPage = () => {
             </button>
           )}
         </form>
+      </section>
+
+      {/* Deadlines */}
+      <section>
+        <h2>Deadlines</h2>
+
+        {deadlines.length === 0 ? (
+          <p>No deadlines found.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Due Date / Time</th>
+                <th>Responsible Person</th>
+                <th>Status</th>
+                <th>Location / Court</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deadlines.map((deadline) => (
+                <tr key={deadline.matterDeadlineId}>
+                  <td>{deadline.title}</td>
+                  <td>{deadline.deadlineType}</td>
+                  <td style={{ color: isDeadlinePassed(deadline) ? "red" : undefined }}>
+                    {new Date(deadline.dueDateTime).toLocaleString()}
+                    {isDeadlinePassed(deadline) ? " (Passed)" : ""}
+                  </td>
+                  <td>{deadline.responsiblePerson ?? "-"}</td>
+                  <td>{deadline.status}</td>
+                  <td>{deadline.locationOrCourt ?? "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </div>
   );
