@@ -4,6 +4,7 @@ export interface MatterTaskListItem {
   matterTaskId: number;
   matterId: number;
   title: string;
+  description: string | null;
   assignedTo: string | null;
   priority: string;
   status: string;
@@ -41,5 +42,23 @@ export const createMatterTask = async (
   dto: CreateMatterTaskDto
 ): Promise<MatterTaskListItem> => {
   const response = await apiClient.post(`/matters/${matterId}/tasks`, dto);
+  return response.data.data;
+};
+
+export interface UpdateMatterTaskDto {
+  title: string;
+  description?: string;
+  assignedTo: string;
+  priority: string;
+  status: string;
+  dueDate: string;
+}
+
+export const updateMatterTask = async (
+  matterId: number,
+  taskId: number,
+  dto: UpdateMatterTaskDto
+): Promise<MatterTaskListItem> => {
+  const response = await apiClient.put(`/matters/${matterId}/tasks/${taskId}`, dto);
   return response.data.data;
 };

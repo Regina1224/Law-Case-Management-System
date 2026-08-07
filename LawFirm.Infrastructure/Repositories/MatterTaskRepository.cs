@@ -39,9 +39,21 @@ public class MatterTaskRepository : IMatterTaskRepository
         return await query.OrderBy(t => t.DueDate).ToListAsync();
     }
 
+    public async Task<MatterTask?> GetByIdAsync(int id)
+    {
+        return await _dbContext.MatterTasks.FindAsync(id);
+    }
+
     public async Task<MatterTask> AddAsync(MatterTask task)
     {
         _dbContext.MatterTasks.Add(task);
+        await _dbContext.SaveChangesAsync();
+        return task;
+    }
+
+    public async Task<MatterTask> UpdateAsync(MatterTask task)
+    {
+        _dbContext.MatterTasks.Update(task);
         await _dbContext.SaveChangesAsync();
         return task;
     }
