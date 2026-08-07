@@ -23,9 +23,21 @@ public class MatterDeadlineRepository : IMatterDeadlineRepository
             .ToListAsync();
     }
 
+    public async Task<MatterDeadline?> GetByIdAsync(int id)
+    {
+        return await _dbContext.MatterDeadlines.FindAsync(id);
+    }
+
     public async Task<MatterDeadline> AddAsync(MatterDeadline deadline)
     {
         _dbContext.MatterDeadlines.Add(deadline);
+        await _dbContext.SaveChangesAsync();
+        return deadline;
+    }
+
+    public async Task<MatterDeadline> UpdateAsync(MatterDeadline deadline)
+    {
+        _dbContext.MatterDeadlines.Update(deadline);
         await _dbContext.SaveChangesAsync();
         return deadline;
     }

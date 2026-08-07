@@ -26,6 +26,7 @@ import {
 import {
   getMatterDeadlines,
   createMatterDeadline,
+  updateMatterDeadlineStatus,
   type MatterDeadlineListItem,
 } from "../services/matterDeadlineService";
 
@@ -234,6 +235,16 @@ const MatterDetailPage = () => {
       setDeadlineError("Failed to create deadline.");
     } finally {
       setAddingDeadline(false);
+    }
+  };
+
+  const handleUpdateDeadlineStatus = async (deadlineId: number, status: string) => {
+    try {
+      await updateMatterDeadlineStatus(matterId, deadlineId, status);
+      const result = await getMatterDeadlines(matterId);
+      setDeadlines(result);
+    } catch {
+      setDeadlineError("Failed to update deadline status.");
     }
   };
 
@@ -917,6 +928,7 @@ const MatterDetailPage = () => {
                 <th>Responsible Person</th>
                 <th>Status</th>
                 <th>Location / Court</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -931,6 +943,36 @@ const MatterDetailPage = () => {
                   <td>{deadline.responsiblePerson ?? "-"}</td>
                   <td>{deadline.status}</td>
                   <td>{deadline.locationOrCourt ?? "-"}</td>
+                  <td>
+                    {deadline.status === "Scheduled" && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateDeadlineStatus(deadline.matterDeadlineId, "Completed")
+                          }
+                        >
+                          Mark Completed
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateDeadlineStatus(deadline.matterDeadlineId, "Adjourned")
+                          }
+                        >
+                          Mark Adjourned
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateDeadlineStatus(deadline.matterDeadlineId, "Cancelled")
+                          }
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

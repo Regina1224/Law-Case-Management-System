@@ -35,3 +35,15 @@ export const createMatterDeadline = async (
   const response = await apiClient.post(`/matters/${matterId}/deadlines`, dto);
   return response.data.data;
 };
+
+export const updateMatterDeadlineStatus = async (
+  matterId: number,
+  deadlineId: number,
+  status: string
+): Promise<MatterDeadlineListItem> => {
+  const response = await apiClient.put(
+    `/matters/${matterId}/deadlines/${deadlineId}/status`,
+    { status }
+  );
+  return response.data.data;
+};
