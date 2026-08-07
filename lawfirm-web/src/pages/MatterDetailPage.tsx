@@ -20,6 +20,7 @@ import {
 import {
   getMatterTasks,
   createMatterTask,
+  updateMatterTask,
   type MatterTaskListItem,
 } from "../services/matterTaskService";
 
@@ -95,6 +96,8 @@ const MatterDetailPage = () => {
   const [taskAssignedTo, setTaskAssignedTo] = useState("");
   const [taskPriority, setTaskPriority] = useState("");
   const [taskDueDate, setTaskDueDate] = useState("");
+  const [taskStatus, setTaskStatus] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [addingTask, setAddingTask] = useState(false);
   const [taskError, setTaskError] = useState<string | null>(null);
 
@@ -161,10 +164,46 @@ const MatterDetailPage = () => {
     fetchTasks();
   }, [matterId, taskStatusFilter, taskAssignedToFilter, taskPriorityFilter]);
 
-  const handleAddTask = async (e: React.FormEvent) => {
+  const resetTaskForm = () => {
+    setEditingTaskId(null);
+    setTaskTitle("");
+    setTaskDescription("");
+    setTaskAssignedTo("");
+    setTaskPriority("");
+    setTaskDueDate("");
+    setTaskStatus("");
+  };
+
+  const refreshTasks = async () => {
+    const result = await getMatterTasks(matterId, {
+      status: taskStatusFilter || undefined,
+      assignedTo: taskAssignedToFilter || undefined,
+      priority: taskPriorityFilter || undefined,
+    });
+    setTasks(result);
+  };
+
+  const handleEditTask = (task: MatterTaskListItem) => {
+    setEditingTaskId(task.matterTaskId);
+    setTaskTitle(task.title);
+    setTaskDescription(task.description ?? "");
+    setTaskAssignedTo(task.assignedTo ?? "");
+    setTaskPriority(task.priority);
+    setTaskDueDate(task.dueDate.slice(0, 10));
+    setTaskStatus(task.status);
+    setTaskError(null);
+  };
+
+  const handleSubmitTask = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!taskTitle || !taskAssignedTo || !taskPriority || !taskDueDate) {
+    if (
+      !taskTitle ||
+      !taskAssignedTo ||
+      !taskPriority ||
+      !taskDueDate ||
+      (editingTaskId && !taskStatus)
+    ) {
       setTaskError("Please fill in all required fields.");
       return;
     }
@@ -173,30 +212,47 @@ const MatterDetailPage = () => {
     setTaskError(null);
 
     try {
-      await createMatterTask(matterId, {
-        title: taskTitle,
-        description: taskDescription || undefined,
-        assignedTo: taskAssignedTo,
-        priority: taskPriority,
-        dueDate: taskDueDate,
-      });
+      if (editingTaskId) {
+        await updateMatterTask(matterId, editingTaskId, {
+          title: taskTitle,
+          description: taskDescription || undefined,
+          assignedTo: taskAssignedTo,
+          priority: taskPriority,
+          status: taskStatus,
+          dueDate: taskDueDate,
+        });
+      } else {
+        await createMatterTask(matterId, {
+          title: taskTitle,
+          description: taskDescription || undefined,
+          assignedTo: taskAssignedTo,
+          priority: taskPriority,
+          dueDate: taskDueDate,
+        });
+      }
 
-      const result = await getMatterTasks(matterId, {
-        status: taskStatusFilter || undefined,
-        assignedTo: taskAssignedToFilter || undefined,
-        priority: taskPriorityFilter || undefined,
-      });
-      setTasks(result);
-
-      setTaskTitle("");
-      setTaskDescription("");
-      setTaskAssignedTo("");
-      setTaskPriority("");
-      setTaskDueDate("");
+      await refreshTasks();
+      resetTaskForm();
     } catch {
-      setTaskError("Failed to create task.");
+      setTaskError(editingTaskId ? "Failed to update task." : "Failed to create task.");
     } finally {
       setAddingTask(false);
+    }
+  };
+
+  const handleMarkComplete = async (task: MatterTaskListItem) => {
+    try {
+      await updateMatterTask(matterId, task.matterTaskId, {
+        title: task.title,
+        description: task.description || undefined,
+        assignedTo: task.assignedTo ?? "",
+        priority: task.priority,
+        status: "Completed",
+        dueDate: task.dueDate.slice(0, 10),
+      });
+      await refreshTasks();
+    } catch {
+      setTaskError("Failed to mark task as complete.");
     }
   };
 
@@ -662,6 +718,7 @@ const MatterDetailPage = () => {
                 <th>Due Date</th>
                 <th>Created By</th>
                 <th>Created Date</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -677,16 +734,26 @@ const MatterDetailPage = () => {
                   </td>
                   <td>{task.createdBy ?? "-"}</td>
                   <td>{new Date(task.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <button type="button" onClick={() => handleEditTask(task)}>
+                      Edit
+                    </button>
+                    {task.status !== "Completed" && (
+                      <button type="button" onClick={() => handleMarkComplete(task)}>
+                        Mark Complete
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
 
-        <h3>Add Task</h3>
+        <h3>{editingTaskId ? "Edit Task" : "Add Task"}</h3>
         {taskError && <p style={{ color: "red" }}>{taskError}</p>}
 
-        <form onSubmit={handleAddTask}>
+        <form onSubmit={handleSubmitTask}>
           <div>
             <label>Title</label>
             <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
@@ -721,6 +788,22 @@ const MatterDetailPage = () => {
             </select>
           </div>
 
+          {editingTaskId && (
+            <div>
+              <label>Status</label>
+              <select
+                value={taskStatus}
+                onChange={(e) => setTaskStatus(e.target.value)}
+              >
+                {TASK_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label>Due Date</label>
             <input
@@ -731,8 +814,17 @@ const MatterDetailPage = () => {
           </div>
 
           <button type="submit" disabled={addingTask}>
-            {addingTask ? "Adding..." : "Add Task"}
+            {addingTask
+              ? "Saving..."
+              : editingTaskId
+              ? "Save Changes"
+              : "Add Task"}
           </button>
+          {editingTaskId && (
+            <button type="button" onClick={resetTaskForm}>
+              Cancel
+            </button>
+          )}
         </form>
       </section>
     </div>

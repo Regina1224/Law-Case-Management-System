@@ -386,6 +386,7 @@ public class MatterService : IMatterService
             MatterTaskId = t.MatterTaskId,
             MatterId = t.MatterId,
             Title = t.Title,
+            Description = t.Description,
             AssignedTo = t.AssignedTo,
             Priority = t.Priority,
             Status = t.Status,
@@ -437,12 +438,67 @@ public class MatterService : IMatterService
             MatterTaskId = saved.MatterTaskId,
             MatterId = saved.MatterId,
             Title = saved.Title,
+            Description = saved.Description,
             AssignedTo = saved.AssignedTo,
             Priority = saved.Priority,
             Status = saved.Status,
             DueDate = saved.DueDate,
             CreatedBy = saved.CreatedBy,
             CreatedAt = saved.CreatedAt
+        };
+    }
+
+    public async Task<MatterTaskListItemDto> UpdateMatterTaskAsync(int matterId, int taskId, UpdateMatterTaskDto dto)
+    {
+        var task = await _matterTaskRepository.GetByIdAsync(taskId);
+        if (task == null || task.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Task with id {taskId} was not found for matter {matterId}.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            throw new ArgumentException("Task title is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.AssignedTo))
+        {
+            throw new ArgumentException("Assigned to is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Priority))
+        {
+            throw new ArgumentException("Priority is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Status))
+        {
+            throw new ArgumentException("Status is required.");
+        }
+
+        task.Title = dto.Title;
+        task.Description = dto.Description;
+        task.AssignedTo = dto.AssignedTo;
+        task.Priority = dto.Priority;
+        task.Status = dto.Status;
+        task.DueDate = dto.DueDate;
+        task.CompletedDate = dto.Status == "Completed" ? (task.CompletedDate ?? DateTime.UtcNow) : null;
+        task.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterTaskRepository.UpdateAsync(task);
+
+        return new MatterTaskListItemDto
+        {
+            MatterTaskId = updated.MatterTaskId,
+            MatterId = updated.MatterId,
+            Title = updated.Title,
+            Description = updated.Description,
+            AssignedTo = updated.AssignedTo,
+            Priority = updated.Priority,
+            Status = updated.Status,
+            DueDate = updated.DueDate,
+            CreatedBy = updated.CreatedBy,
+            CreatedAt = updated.CreatedAt
         };
     }
 }
