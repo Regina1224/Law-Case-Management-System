@@ -19,6 +19,7 @@ import {
 } from "../services/matterRelatedPartyService";
 import {
   getMatterTasks,
+  createMatterTask,
   type MatterTaskListItem,
 } from "../services/matterTaskService";
 
@@ -89,6 +90,13 @@ const MatterDetailPage = () => {
   const [taskStatusFilter, setTaskStatusFilter] = useState("");
   const [taskAssignedToFilter, setTaskAssignedToFilter] = useState("");
   const [taskPriorityFilter, setTaskPriorityFilter] = useState("");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskAssignedTo, setTaskAssignedTo] = useState("");
+  const [taskPriority, setTaskPriority] = useState("");
+  const [taskDueDate, setTaskDueDate] = useState("");
+  const [addingTask, setAddingTask] = useState(false);
+  const [taskError, setTaskError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMatter = async () => {
@@ -152,6 +160,45 @@ const MatterDetailPage = () => {
     };
     fetchTasks();
   }, [matterId, taskStatusFilter, taskAssignedToFilter, taskPriorityFilter]);
+
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!taskTitle || !taskAssignedTo || !taskPriority || !taskDueDate) {
+      setTaskError("Please fill in all required fields.");
+      return;
+    }
+
+    setAddingTask(true);
+    setTaskError(null);
+
+    try {
+      await createMatterTask(matterId, {
+        title: taskTitle,
+        description: taskDescription || undefined,
+        assignedTo: taskAssignedTo,
+        priority: taskPriority,
+        dueDate: taskDueDate,
+      });
+
+      const result = await getMatterTasks(matterId, {
+        status: taskStatusFilter || undefined,
+        assignedTo: taskAssignedToFilter || undefined,
+        priority: taskPriorityFilter || undefined,
+      });
+      setTasks(result);
+
+      setTaskTitle("");
+      setTaskDescription("");
+      setTaskAssignedTo("");
+      setTaskPriority("");
+      setTaskDueDate("");
+    } catch {
+      setTaskError("Failed to create task.");
+    } finally {
+      setAddingTask(false);
+    }
+  };
 
   const resetPartyForm = () => {
     setEditingPartyId(null);
@@ -635,6 +682,58 @@ const MatterDetailPage = () => {
             </tbody>
           </table>
         )}
+
+        <h3>Add Task</h3>
+        {taskError && <p style={{ color: "red" }}>{taskError}</p>}
+
+        <form onSubmit={handleAddTask}>
+          <div>
+            <label>Title</label>
+            <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
+          </div>
+
+          <div>
+            <label>Description</label>
+            <input
+              value={taskDescription}
+              onChange={(e) => setTaskDescription(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label>Assigned To</label>
+            <input
+              value={taskAssignedTo}
+              onChange={(e) => setTaskAssignedTo(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label>Priority</label>
+            <select
+              value={taskPriority}
+              onChange={(e) => setTaskPriority(e.target.value)}
+            >
+              <option value="">-- Select Priority --</option>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Due Date</label>
+            <input
+              type="date"
+              value={taskDueDate}
+              onChange={(e) => setTaskDueDate(e.target.value)}
+            />
+          </div>
+
+          <button type="submit" disabled={addingTask}>
+            {addingTask ? "Adding..." : "Add Task"}
+          </button>
+        </form>
       </section>
     </div>
   );

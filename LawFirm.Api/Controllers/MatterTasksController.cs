@@ -26,4 +26,11 @@ public class MatterTasksController : ControllerBase
         var result = await _matterService.GetMatterTasksAsync(matterId, status, assignedTo, priority);
         return Ok(ApiResponse<List<MatterTaskListItemDto>>.Ok(result));
     }
+
+    [HttpPost]
+    public async Task<IActionResult> AddTask(int matterId, [FromBody] CreateMatterTaskDto dto)
+    {
+        var result = await _matterService.AddMatterTaskAsync(matterId, dto);
+        return Ok(ApiResponse<MatterTaskListItemDto>.Ok(result));
+    }
 }
