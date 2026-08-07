@@ -22,4 +22,11 @@ public class MatterDeadlineRepository : IMatterDeadlineRepository
             .AsNoTracking()
             .ToListAsync();
     }
+
+    public async Task<MatterDeadline> AddAsync(MatterDeadline deadline)
+    {
+        _dbContext.MatterDeadlines.Add(deadline);
+        await _dbContext.SaveChangesAsync();
+        return deadline;
+    }
 }

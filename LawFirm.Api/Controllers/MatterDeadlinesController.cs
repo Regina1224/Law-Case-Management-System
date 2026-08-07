@@ -22,4 +22,11 @@ public class MatterDeadlinesController : ControllerBase
         var result = await _matterService.GetMatterDeadlinesAsync(matterId);
         return Ok(ApiResponse<List<MatterDeadlineListItemDto>>.Ok(result));
     }
+
+    [HttpPost]
+    public async Task<IActionResult> AddDeadline(int matterId, [FromBody] CreateMatterDeadlineDto dto)
+    {
+        var result = await _matterService.AddMatterDeadlineAsync(matterId, dto);
+        return Ok(ApiResponse<MatterDeadlineListItemDto>.Ok(result));
+    }
 }

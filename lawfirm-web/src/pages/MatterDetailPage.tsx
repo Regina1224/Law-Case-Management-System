@@ -25,6 +25,7 @@ import {
 } from "../services/matterTaskService";
 import {
   getMatterDeadlines,
+  createMatterDeadline,
   type MatterDeadlineListItem,
 } from "../services/matterDeadlineService";
 
@@ -110,6 +111,14 @@ const MatterDetailPage = () => {
 
   // Deadlines
   const [deadlines, setDeadlines] = useState<MatterDeadlineListItem[]>([]);
+  const [deadlineTitle, setDeadlineTitle] = useState("");
+  const [deadlineType, setDeadlineType] = useState("");
+  const [deadlineDueDateTime, setDeadlineDueDateTime] = useState("");
+  const [deadlineResponsiblePerson, setDeadlineResponsiblePerson] = useState("");
+  const [deadlineLocationOrCourt, setDeadlineLocationOrCourt] = useState("");
+  const [deadlineNotes, setDeadlineNotes] = useState("");
+  const [addingDeadline, setAddingDeadline] = useState(false);
+  const [deadlineError, setDeadlineError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMatter = async () => {
@@ -185,6 +194,48 @@ const MatterDetailPage = () => {
     };
     fetchDeadlines();
   }, [matterId]);
+
+  const handleAddDeadline = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (
+      !deadlineTitle ||
+      !deadlineType ||
+      !deadlineDueDateTime ||
+      !deadlineResponsiblePerson
+    ) {
+      setDeadlineError("Please fill in all required fields.");
+      return;
+    }
+
+    setAddingDeadline(true);
+    setDeadlineError(null);
+
+    try {
+      await createMatterDeadline(matterId, {
+        title: deadlineTitle,
+        deadlineType,
+        dueDateTime: deadlineDueDateTime,
+        responsiblePerson: deadlineResponsiblePerson,
+        locationOrCourt: deadlineLocationOrCourt || undefined,
+        notes: deadlineNotes || undefined,
+      });
+
+      const result = await getMatterDeadlines(matterId);
+      setDeadlines(result);
+
+      setDeadlineTitle("");
+      setDeadlineType("");
+      setDeadlineDueDateTime("");
+      setDeadlineResponsiblePerson("");
+      setDeadlineLocationOrCourt("");
+      setDeadlineNotes("");
+    } catch {
+      setDeadlineError("Failed to create deadline.");
+    } finally {
+      setAddingDeadline(false);
+    }
+  };
 
   const resetTaskForm = () => {
     setEditingTaskId(null);
@@ -885,6 +936,71 @@ const MatterDetailPage = () => {
             </tbody>
           </table>
         )}
+
+        <h3>Add Deadline</h3>
+        {deadlineError && <p style={{ color: "red" }}>{deadlineError}</p>}
+
+        <form onSubmit={handleAddDeadline}>
+          <div>
+            <label>Title</label>
+            <input
+              value={deadlineTitle}
+              onChange={(e) => setDeadlineTitle(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label>Deadline Type</label>
+            <select
+              value={deadlineType}
+              onChange={(e) => setDeadlineType(e.target.value)}
+            >
+              <option value="">-- Select Deadline Type --</option>
+              <option value="Filing Deadline">Filing Deadline</option>
+              <option value="Court Hearing">Court Hearing</option>
+              <option value="Review Date">Review Date</option>
+              <option value="Consultation">Consultation</option>
+              <option value="Settlement Date">Settlement Date</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Due Date / Time</label>
+            <input
+              type="datetime-local"
+              value={deadlineDueDateTime}
+              onChange={(e) => setDeadlineDueDateTime(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label>Responsible Person</label>
+            <input
+              value={deadlineResponsiblePerson}
+              onChange={(e) => setDeadlineResponsiblePerson(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label>Location / Court</label>
+            <input
+              value={deadlineLocationOrCourt}
+              onChange={(e) => setDeadlineLocationOrCourt(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label>Notes</label>
+            <input
+              value={deadlineNotes}
+              onChange={(e) => setDeadlineNotes(e.target.value)}
+            />
+          </div>
+
+          <button type="submit" disabled={addingDeadline}>
+            {addingDeadline ? "Adding..." : "Add Deadline"}
+          </button>
+        </form>
       </section>
     </div>
   );
