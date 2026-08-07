@@ -574,4 +574,36 @@ public class MatterService : IMatterService
             Status = saved.Status
         };
     }
+
+    public async Task<MatterDeadlineListItemDto> UpdateMatterDeadlineStatusAsync(int matterId, int deadlineId, UpdateMatterDeadlineStatusDto dto)
+    {
+        var deadline = await _matterDeadlineRepository.GetByIdAsync(deadlineId);
+        if (deadline == null || deadline.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Deadline with id {deadlineId} was not found for matter {matterId}.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Status))
+        {
+            throw new ArgumentException("Status is required.");
+        }
+
+        deadline.Status = dto.Status;
+        deadline.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterDeadlineRepository.UpdateAsync(deadline);
+
+        return new MatterDeadlineListItemDto
+        {
+            MatterDeadlineId = updated.MatterDeadlineId,
+            MatterId = updated.MatterId,
+            Title = updated.Title,
+            DeadlineType = updated.DeadlineType,
+            DueDateTime = updated.DueDateTime,
+            ResponsiblePerson = updated.ResponsiblePerson,
+            LocationOrCourt = updated.LocationOrCourt,
+            Notes = updated.Notes,
+            Status = updated.Status
+        };
+    }
 }
