@@ -10,4 +10,6 @@ public interface IDocumentService
     Task<(Stream FileStream, string ContentType, string FileName)> DownloadIntakeDocumentAsync(int documentId);
 
     Task<List<MatterDocumentDto>> GetMatterDocumentsAsync(int matterId);
+
+    Task<MatterDocumentDto> UploadMatterDocumentAsync(int matterId, IFormFile file, string documentCategory, string? description);
 }

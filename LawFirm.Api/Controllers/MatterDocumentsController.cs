@@ -1,3 +1,4 @@
+using LawFirm.Application.DTOs.Documents;
 using LawFirm.Application.DTOs.Matters;
 using LawFirm.Application.Services.Interfaces;
 using LawFirm.Shared.Models;
@@ -21,5 +22,13 @@ public class MatterDocumentsController : ControllerBase
     {
         var result = await _documentService.GetMatterDocumentsAsync(matterId);
         return Ok(ApiResponse<List<MatterDocumentDto>>.Ok(result));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UploadDocument(int matterId, [FromForm] UploadMatterDocumentRequest request)
+    {
+        var result = await _documentService.UploadMatterDocumentAsync(
+            matterId, request.File, request.DocumentCategory, request.Description);
+        return Ok(ApiResponse<MatterDocumentDto>.Ok(result));
     }
 }
