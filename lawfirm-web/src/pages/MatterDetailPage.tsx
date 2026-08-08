@@ -32,6 +32,7 @@ import {
 import {
   getMatterDocuments,
   getDocumentDownloadUrl,
+  uploadMatterDocument,
   type MatterDocument,
 } from "../services/matterDocumentService";
 
@@ -128,6 +129,11 @@ const MatterDetailPage = () => {
 
   // Documents
   const [documents, setDocuments] = useState<MatterDocument[]>([]);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadCategory, setUploadCategory] = useState("Engagement Documents");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMatter = async () => {
@@ -215,6 +221,35 @@ const MatterDetailPage = () => {
     };
     fetchDocuments();
   }, [matterId]);
+
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!uploadFile || !uploadCategory) {
+      setUploadError("Please select a file and category.");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      await uploadMatterDocument(
+        matterId,
+        uploadFile,
+        uploadCategory,
+        uploadDescription
+      );
+      const refreshedDocs = await getMatterDocuments(matterId);
+      setDocuments(refreshedDocs);
+      setUploadFile(null);
+      setUploadDescription("");
+    } catch {
+      setUploadError("Failed to upload document.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleAddDeadline = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1105,6 +1140,47 @@ const MatterDetailPage = () => {
             </tbody>
           </table>
         )}
+
+        <h3>Upload Document</h3>
+        {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+        <form onSubmit={handleUpload}>
+          <div>
+            <label>File</label>
+            <input
+              type="file"
+              onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+
+          <div>
+            <label>Category</label>
+            <select
+              value={uploadCategory}
+              onChange={(e) => setUploadCategory(e.target.value)}
+            >
+              <option value="Client ID">Client ID</option>
+              <option value="Engagement Documents">Engagement Documents</option>
+              <option value="Pleadings">Pleadings</option>
+              <option value="Correspondence">Correspondence</option>
+              <option value="Court Documents">Court Documents</option>
+              <option value="Evidence">Evidence</option>
+              <option value="Contracts">Contracts</option>
+              <option value="Internal Draft">Internal Draft</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Description</label>
+            <input
+              value={uploadDescription}
+              onChange={(e) => setUploadDescription(e.target.value)}
+            />
+          </div>
+
+          <button type="submit" disabled={uploading}>
+            {uploading ? "Uploading..." : "Upload"}
+          </button>
+        </form>
       </section>
     </div>
   );
