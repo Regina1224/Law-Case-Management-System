@@ -29,6 +29,14 @@ public class DocumentRepository : IDocumentRepository
             .ToListAsync();
     }
 
+    public async Task<List<Document>> GetByMatterIdAsync(int matterId)
+    {
+        return await _dbContext.Documents
+            .Where(d => d.MatterId == matterId && !d.IsArchived)
+            .OrderByDescending(d => d.UploadedAt)
+            .ToListAsync();
+    }
+
     public async Task<Document?> GetByIdAsync(int documentId)
     {
         return await _dbContext.Documents.FirstOrDefaultAsync(d => d.DocumentId == documentId);

@@ -29,6 +29,11 @@ import {
   updateMatterDeadlineStatus,
   type MatterDeadlineListItem,
 } from "../services/matterDeadlineService";
+import {
+  getMatterDocuments,
+  getDocumentDownloadUrl,
+  type MatterDocument,
+} from "../services/matterDocumentService";
 
 const MATTER_STATUSES = [
   "Draft",
@@ -121,6 +126,9 @@ const MatterDetailPage = () => {
   const [addingDeadline, setAddingDeadline] = useState(false);
   const [deadlineError, setDeadlineError] = useState<string | null>(null);
 
+  // Documents
+  const [documents, setDocuments] = useState<MatterDocument[]>([]);
+
   useEffect(() => {
     const fetchMatter = async () => {
       setLoading(true);
@@ -194,6 +202,18 @@ const MatterDetailPage = () => {
       }
     };
     fetchDeadlines();
+  }, [matterId]);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const result = await getMatterDocuments(matterId);
+        setDocuments(result);
+      } catch {
+        // Failure to load documents does not affect the display of the main details page
+      }
+    };
+    fetchDocuments();
   }, [matterId]);
 
   const handleAddDeadline = async (e: React.FormEvent) => {
@@ -1043,6 +1063,48 @@ const MatterDetailPage = () => {
             {addingDeadline ? "Adding..." : "Add Deadline"}
           </button>
         </form>
+      </section>
+
+      {/* Documents */}
+      <section>
+        <h2>Documents</h2>
+
+        {documents.length === 0 ? (
+          <p>No documents yet.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>File Name</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Size</th>
+                <th>Uploaded At</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {documents.map((doc) => (
+                <tr key={doc.documentId}>
+                  <td>{doc.originalFileName}</td>
+                  <td>{doc.documentCategory}</td>
+                  <td>{doc.description ?? "-"}</td>
+                  <td>{(doc.fileSizeBytes / 1024).toFixed(1)} KB</td>
+                  <td>{new Date(doc.uploadedAt).toLocaleString()}</td>
+                  <td>
+                    <a
+                      href={getDocumentDownloadUrl(doc.documentId)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Download
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </div>
   );
