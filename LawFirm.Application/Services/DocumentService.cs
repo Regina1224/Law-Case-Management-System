@@ -1,4 +1,5 @@
 using LawFirm.Application.DTOs.Intakes;
+using LawFirm.Application.DTOs.Matters;
 using LawFirm.Application.Services.Interfaces;
 using LawFirm.Domain.Entities;
 using LawFirm.Infrastructure.Repositories.Interfaces;
@@ -125,5 +126,21 @@ public class DocumentService : IDocumentService
 
         var stream = await _blobStorageService.DownloadFileAsync(ContainerName, document.BlobPath);
         return (stream, document.ContentType, document.OriginalFileName);
+    }
+
+    public async Task<List<MatterDocumentDto>> GetMatterDocumentsAsync(int matterId)
+    {
+        var documents = await _documentRepository.GetByMatterIdAsync(matterId);
+
+        return documents.Select(d => new MatterDocumentDto
+        {
+            DocumentId = d.DocumentId,
+            OriginalFileName = d.OriginalFileName,
+            DocumentCategory = d.DocumentCategory,
+            Description = d.Description,
+            FileSizeBytes = d.FileSizeBytes,
+            ContentType = d.ContentType,
+            UploadedAt = d.UploadedAt
+        }).ToList();
     }
 }
