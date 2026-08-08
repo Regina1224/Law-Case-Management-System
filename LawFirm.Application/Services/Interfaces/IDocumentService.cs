@@ -1,3 +1,4 @@
+using LawFirm.Application.DTOs.Clients;
 using LawFirm.Application.DTOs.Intakes;
 using LawFirm.Application.DTOs.Matters;
 using Microsoft.AspNetCore.Http;
@@ -12,4 +13,8 @@ public interface IDocumentService
     Task<List<MatterDocumentDto>> GetMatterDocumentsAsync(int matterId);
 
     Task<MatterDocumentDto> UploadMatterDocumentAsync(int matterId, IFormFile file, string documentCategory, string? description);
+
+    Task<List<ClientDocumentDto>> GetClientDocumentsAsync(int clientId);
+
+    Task<ClientDocumentDto> UploadClientDocumentAsync(int clientId, IFormFile file, string documentCategory, string? description);
 }

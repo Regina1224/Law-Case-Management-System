@@ -12,6 +12,12 @@ import {
   getClientNotes,
   createClientNote,
 } from "../services/clientNoteService";
+import {
+  type ClientDocument,
+  getClientDocuments,
+  getDocumentDownloadUrl,
+  uploadClientDocument,
+} from "../services/clientDocumentService";
 
 const ClientDetailPage = () => {
   const { id } = useParams();
@@ -28,6 +34,13 @@ const ClientDetailPage = () => {
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
   const [addingNote, setAddingNote] = useState(false);
+
+  const [documents, setDocuments] = useState<ClientDocument[]>([]);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadCategory, setUploadCategory] = useState("Client ID");
+  const [uploadDescription, setUploadDescription] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -65,6 +78,18 @@ const ClientDetailPage = () => {
       }
     };
     fetchNotes();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const result = await getClientDocuments(Number(id));
+        setDocuments(result);
+      } catch {
+        // Failure to load documents does not affect the display of the main details page
+      }
+    };
+    fetchDocuments();
   }, [id]);
 
   const handleAddContact = async (e: React.FormEvent) => {
@@ -119,6 +144,35 @@ const ClientDetailPage = () => {
       //
     } finally {
       setAddingNote(false);
+    }
+  };
+
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!uploadFile || !uploadCategory) {
+      setUploadError("Please select a file and category.");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      await uploadClientDocument(
+        Number(id),
+        uploadFile,
+        uploadCategory,
+        uploadDescription
+      );
+      const refreshedDocs = await getClientDocuments(Number(id));
+      setDocuments(refreshedDocs);
+      setUploadFile(null);
+      setUploadDescription("");
+    } catch {
+      setUploadError("Failed to upload document.");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -236,6 +290,82 @@ const ClientDetailPage = () => {
         </div>
         <button type="submit" disabled={addingNote}>
           {addingNote ? "Adding..." : "Add Note"}
+        </button>
+      </form>
+
+      <h2>Documents</h2>
+
+      {documents.length === 0 ? (
+        <p>No documents yet.</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>File Name</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Size</th>
+              <th>Uploaded At</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {documents.map((doc) => (
+              <tr key={doc.documentId}>
+                <td>{doc.originalFileName}</td>
+                <td>{doc.documentCategory}</td>
+                <td>{doc.description ?? "-"}</td>
+                <td>{(doc.fileSizeBytes / 1024).toFixed(1)} KB</td>
+                <td>{new Date(doc.uploadedAt).toLocaleString()}</td>
+                <td>
+                  <a
+                    href={getDocumentDownloadUrl(doc.documentId)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Download
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <h3>Upload Document</h3>
+      {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+      <form onSubmit={handleUpload}>
+        <div>
+          <label>File</label>
+          <input
+            type="file"
+            onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+          />
+        </div>
+
+        <div>
+          <label>Category</label>
+          <select
+            value={uploadCategory}
+            onChange={(e) => setUploadCategory(e.target.value)}
+          >
+            <option value="Client ID">Client ID</option>
+            <option value="Engagement Documents">Engagement Documents</option>
+            <option value="Correspondence">Correspondence</option>
+            <option value="Internal Draft">Internal Draft</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Description</label>
+          <input
+            value={uploadDescription}
+            onChange={(e) => setUploadDescription(e.target.value)}
+          />
+        </div>
+
+        <button type="submit" disabled={uploading}>
+          {uploading ? "Uploading..." : "Upload"}
         </button>
       </form>
     </div>
