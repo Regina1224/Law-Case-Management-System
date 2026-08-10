@@ -170,6 +170,11 @@ public class DocumentService : IDocumentService
             throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
         }
 
+        if (matter.Status == "Closed")
+        {
+            throw new ArgumentException("This matter is closed and cannot be modified.");
+        }
+
         if (file == null || file.Length == 0)
         {
             throw new ArgumentException("File is required.");
