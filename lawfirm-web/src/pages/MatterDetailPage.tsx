@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import {
   getMatterById,
   updateMatter,
+  closeMatter,
   type MatterDetail,
 } from "../services/matterService";
 import {
@@ -43,7 +44,6 @@ const MATTER_STATUSES = [
   "In Progress",
   "Awaiting External Response",
   "On Hold",
-  "Closed",
   "Archived",
 ];
 
@@ -134,6 +134,15 @@ const MatterDetailPage = () => {
   const [uploadDescription, setUploadDescription] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Close matter
+  const [closureDate, setClosureDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [closureReason, setClosureReason] = useState("");
+  const [closureNotes, setClosureNotes] = useState("");
+  const [closingMatter, setClosingMatter] = useState(false);
+  const [closeError, setCloseError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMatter = async () => {
@@ -248,6 +257,31 @@ const MatterDetailPage = () => {
       setUploadError("Failed to upload document.");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleCloseMatter = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!closureDate || !closureReason) {
+      setCloseError("Please fill in all required fields.");
+      return;
+    }
+
+    setClosingMatter(true);
+    setCloseError(null);
+
+    try {
+      const updated = await closeMatter(matterId, {
+        closureDate,
+        closureReason,
+        closureNotes: closureNotes || undefined,
+      });
+      setMatter(updated);
+    } catch {
+      setCloseError("Failed to close matter.");
+    } finally {
+      setClosingMatter(false);
     }
   };
 
@@ -586,6 +620,70 @@ const MatterDetailPage = () => {
 
         <p>Confidential: {matter.isConfidential ? "Yes" : "No"}</p>
         <p>Created At: {new Date(matter.createdAt).toLocaleString()}</p>
+      </section>
+
+      {/* Close Matter */}
+      <section>
+        <h2>Close Matter</h2>
+
+        {matter.status === "Closed" ? (
+          <div>
+            <p>This matter is closed.</p>
+            <p>
+              Closed Date:{" "}
+              {matter.closedDate
+                ? new Date(matter.closedDate).toLocaleDateString()
+                : "-"}
+            </p>
+            <p>Closure Reason: {matter.closureReason ?? "-"}</p>
+            <p>Closure Notes: {matter.closureNotes ?? "-"}</p>
+          </div>
+        ) : (
+          <>
+            {(tasks.some(
+              (t) => t.status !== "Completed" && t.status !== "Cancelled"
+            ) ||
+              deadlines.some((d) => d.status === "Scheduled")) && (
+              <p style={{ color: "darkorange" }}>
+                This matter still has open tasks or scheduled deadlines. You
+                can still close it, but consider reviewing them first.
+              </p>
+            )}
+
+            {closeError && <p style={{ color: "red" }}>{closeError}</p>}
+
+            <form onSubmit={handleCloseMatter}>
+              <div>
+                <label>Closure Date</label>
+                <input
+                  type="date"
+                  value={closureDate}
+                  onChange={(e) => setClosureDate(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label>Closure Reason</label>
+                <input
+                  value={closureReason}
+                  onChange={(e) => setClosureReason(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label>Closure Notes</label>
+                <input
+                  value={closureNotes}
+                  onChange={(e) => setClosureNotes(e.target.value)}
+                />
+              </div>
+
+              <button type="submit" disabled={closingMatter}>
+                {closingMatter ? "Closing..." : "Close Matter"}
+              </button>
+            </form>
+          </>
+        )}
       </section>
 
       {/* Assignment and status update */}

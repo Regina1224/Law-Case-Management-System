@@ -51,4 +51,11 @@ public class MattersController : ControllerBase
         var result = await _matterService.UpdateMatterAsync(id, dto);
         return Ok(ApiResponse<MatterDetailDto>.Ok(result));
     }
+
+    [HttpPut("{id}/close")]
+    public async Task<IActionResult> CloseMatter(int id, [FromBody] CloseMatterDto dto)
+    {
+        var result = await _matterService.CloseMatterAsync(id, dto);
+        return Ok(ApiResponse<MatterDetailDto>.Ok(result));
+    }
 }

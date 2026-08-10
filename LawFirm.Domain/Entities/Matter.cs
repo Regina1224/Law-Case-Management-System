@@ -26,6 +26,8 @@ public class Matter
     public DateTime OpenedDate { get; set; }
     public DateTime? TargetCloseDate { get; set; }
     public DateTime? ClosedDate { get; set; }
+    public string? ClosureReason { get; set; }
+    public string? ClosureNotes { get; set; }
 
     public bool IsConfidential { get; set; }
 
