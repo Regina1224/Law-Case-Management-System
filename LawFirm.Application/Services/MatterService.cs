@@ -175,6 +175,8 @@ public class MatterService : IMatterService
             throw new KeyNotFoundException($"Matter with id {id} was not found.");
         }
 
+        EnsureMatterIsNotClosed(matter);
+
         if (string.IsNullOrWhiteSpace(dto.ResponsibleLawyer))
         {
             throw new ArgumentException("Responsible lawyer is required.");
@@ -226,6 +228,14 @@ public class MatterService : IMatterService
         return MapToMatterDetailDto(updated);
     }
 
+    private static void EnsureMatterIsNotClosed(Matter matter)
+    {
+        if (matter.Status == "Closed")
+        {
+            throw new ArgumentException("This matter is closed and cannot be modified.");
+        }
+    }
+
     private static MatterDetailDto MapToMatterDetailDto(Matter matter)
     {
         return new MatterDetailDto
@@ -264,6 +274,8 @@ public class MatterService : IMatterService
         {
             throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
         }
+
+        EnsureMatterIsNotClosed(matter);
 
         var note = new MatterNote
         {
@@ -310,6 +322,8 @@ public class MatterService : IMatterService
             throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
         }
 
+        EnsureMatterIsNotClosed(matter);
+
         var party = new MatterRelatedParty
         {
             MatterId = matterId,
@@ -338,6 +352,14 @@ public class MatterService : IMatterService
 
     public async Task<MatterRelatedPartyDto> UpdateMatterRelatedPartyAsync(int matterId, int partyId, UpdateMatterRelatedPartyDto dto)
     {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
         var party = await _matterRelatedPartyRepository.GetByIdAsync(partyId);
         if (party == null || party.MatterId != matterId)
         {
@@ -360,6 +382,14 @@ public class MatterService : IMatterService
 
     public async Task<MatterRelatedPartyDto> DeactivateMatterRelatedPartyAsync(int matterId, int partyId)
     {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
         var party = await _matterRelatedPartyRepository.GetByIdAsync(partyId);
         if (party == null || party.MatterId != matterId)
         {
@@ -419,6 +449,8 @@ public class MatterService : IMatterService
             throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
         }
 
+        EnsureMatterIsNotClosed(matter);
+
         if (string.IsNullOrWhiteSpace(dto.Title))
         {
             throw new ArgumentException("Task title is required.");
@@ -465,6 +497,14 @@ public class MatterService : IMatterService
 
     public async Task<MatterTaskListItemDto> UpdateMatterTaskAsync(int matterId, int taskId, UpdateMatterTaskDto dto)
     {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
         var task = await _matterTaskRepository.GetByIdAsync(taskId);
         if (task == null || task.MatterId != matterId)
         {
@@ -543,6 +583,8 @@ public class MatterService : IMatterService
             throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
         }
 
+        EnsureMatterIsNotClosed(matter);
+
         if (string.IsNullOrWhiteSpace(dto.Title))
         {
             throw new ArgumentException("Title is required.");
@@ -589,6 +631,14 @@ public class MatterService : IMatterService
 
     public async Task<MatterDeadlineListItemDto> UpdateMatterDeadlineStatusAsync(int matterId, int deadlineId, UpdateMatterDeadlineStatusDto dto)
     {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
         var deadline = await _matterDeadlineRepository.GetByIdAsync(deadlineId);
         if (deadline == null || deadline.MatterId != matterId)
         {

@@ -558,6 +558,8 @@ const MatterDetailPage = () => {
   if (error) return <div style={{ color: "red" }}>{error}</div>;
   if (!matter) return null;
 
+  const isClosed = matter.status === "Closed";
+
   return (
     <div>
       <Link to="/matters">← Back to Matters</Link>
@@ -689,59 +691,66 @@ const MatterDetailPage = () => {
       {/* Assignment and status update */}
       <section>
         <h2>Edit Assignment / Status</h2>
-        {saveError && <p style={{ color: "red" }}>{saveError}</p>}
 
-        <form onSubmit={handleSave}>
-          <div>
-            <label>Responsible Lawyer</label>
-            <input
-              value={responsibleLawyer}
-              onChange={(e) => setResponsibleLawyer(e.target.value)}
-            />
-          </div>
+        {isClosed ? (
+          <p>This matter is closed and cannot be edited.</p>
+        ) : (
+          <>
+            {saveError && <p style={{ color: "red" }}>{saveError}</p>}
 
-          <div>
-            <label>Supporting Staff</label>
-            <input
-              value={supportingStaff}
-              onChange={(e) => setSupportingStaff(e.target.value)}
-            />
-          </div>
+            <form onSubmit={handleSave}>
+              <div>
+                <label>Responsible Lawyer</label>
+                <input
+                  value={responsibleLawyer}
+                  onChange={(e) => setResponsibleLawyer(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Status</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
-              {MATTER_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div>
+                <label>Supporting Staff</label>
+                <input
+                  value={supportingStaff}
+                  onChange={(e) => setSupportingStaff(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Priority</label>
-            <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-              <option value="">-- None --</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-            </select>
-          </div>
+              <div>
+                <label>Status</label>
+                <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                  {MATTER_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label>Target Close Date</label>
-            <input
-              type="date"
-              value={targetCloseDate}
-              onChange={(e) => setTargetCloseDate(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Priority</label>
+                <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+                  <option value="">-- None --</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
 
-          <button type="submit" disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        </form>
+              <div>
+                <label>Target Close Date</label>
+                <input
+                  type="date"
+                  value={targetCloseDate}
+                  onChange={(e) => setTargetCloseDate(e.target.value)}
+                />
+              </div>
+
+              <button type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </form>
+          </>
+        )}
       </section>
 
       {/* Notes */}
@@ -764,36 +773,42 @@ const MatterDetailPage = () => {
           </div>
         )}
 
-        <h3>Add Note</h3>
-        <form onSubmit={handleAddNote}>
-          <div>
-            <label>Note Title</label>
-            <input
-              value={noteTitle}
-              onChange={(e) => setNoteTitle(e.target.value)}
-            />
-          </div>
-          <div>
-            <label>Note Type</label>
-            <select value={noteType} onChange={(e) => setNoteType(e.target.value)}>
-              <option value="">-- None --</option>
-              <option value="File Note">File Note</option>
-              <option value="Client Call">Client Call</option>
-              <option value="Meeting Note">Meeting Note</option>
-              <option value="Internal Update">Internal Update</option>
-            </select>
-          </div>
-          <div>
-            <label>Note Content</label>
-            <input
-              value={noteContent}
-              onChange={(e) => setNoteContent(e.target.value)}
-            />
-          </div>
-          <button type="submit" disabled={addingNote}>
-            {addingNote ? "Adding..." : "Add Note"}
-          </button>
-        </form>
+        {isClosed ? (
+          <p>This matter is closed. Notes cannot be added.</p>
+        ) : (
+          <>
+            <h3>Add Note</h3>
+            <form onSubmit={handleAddNote}>
+              <div>
+                <label>Note Title</label>
+                <input
+                  value={noteTitle}
+                  onChange={(e) => setNoteTitle(e.target.value)}
+                />
+              </div>
+              <div>
+                <label>Note Type</label>
+                <select value={noteType} onChange={(e) => setNoteType(e.target.value)}>
+                  <option value="">-- None --</option>
+                  <option value="File Note">File Note</option>
+                  <option value="Client Call">Client Call</option>
+                  <option value="Meeting Note">Meeting Note</option>
+                  <option value="Internal Update">Internal Update</option>
+                </select>
+              </div>
+              <div>
+                <label>Note Content</label>
+                <input
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                />
+              </div>
+              <button type="submit" disabled={addingNote}>
+                {addingNote ? "Adding..." : "Add Note"}
+              </button>
+            </form>
+          </>
+        )}
       </section>
 
       {/* Related Parties */}
@@ -823,17 +838,21 @@ const MatterDetailPage = () => {
                   <td>{party.phone ?? "-"}</td>
                   <td>{party.organization ?? "-"}</td>
                   <td>
-                    <button type="button" onClick={() => handleEditParty(party)}>
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleDeactivateParty(party.matterRelatedPartyId)
-                      }
-                    >
-                      Deactivate
-                    </button>
+                    {!isClosed && (
+                      <>
+                        <button type="button" onClick={() => handleEditParty(party)}>
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeactivateParty(party.matterRelatedPartyId)
+                          }
+                        >
+                          Deactivate
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -841,68 +860,74 @@ const MatterDetailPage = () => {
           </table>
         )}
 
-        <h3>{editingPartyId ? "Edit Related Party" : "Add Related Party"}</h3>
-        {partyError && <p style={{ color: "red" }}>{partyError}</p>}
+        {isClosed ? (
+          <p>This matter is closed. Related parties cannot be added or edited.</p>
+        ) : (
+          <>
+            <h3>{editingPartyId ? "Edit Related Party" : "Add Related Party"}</h3>
+            {partyError && <p style={{ color: "red" }}>{partyError}</p>}
 
-        <form onSubmit={handleSubmitParty}>
-          <div>
-            <label>Party Name</label>
-            <input value={partyName} onChange={(e) => setPartyName(e.target.value)} />
-          </div>
+            <form onSubmit={handleSubmitParty}>
+              <div>
+                <label>Party Name</label>
+                <input value={partyName} onChange={(e) => setPartyName(e.target.value)} />
+              </div>
 
-          <div>
-            <label>Party Type</label>
-            <select value={partyType} onChange={(e) => setPartyType(e.target.value)}>
-              <option value="">-- Select Party Type --</option>
-              <option value="Opposing Party">Opposing Party</option>
-              <option value="Witness">Witness</option>
-              <option value="Barrister">Barrister</option>
-              <option value="Court Contact">Court Contact</option>
-              <option value="Insurer">Insurer</option>
-              <option value="Expert">Expert</option>
-            </select>
-          </div>
+              <div>
+                <label>Party Type</label>
+                <select value={partyType} onChange={(e) => setPartyType(e.target.value)}>
+                  <option value="">-- Select Party Type --</option>
+                  <option value="Opposing Party">Opposing Party</option>
+                  <option value="Witness">Witness</option>
+                  <option value="Barrister">Barrister</option>
+                  <option value="Court Contact">Court Contact</option>
+                  <option value="Insurer">Insurer</option>
+                  <option value="Expert">Expert</option>
+                </select>
+              </div>
 
-          <div>
-            <label>Email</label>
-            <input value={partyEmail} onChange={(e) => setPartyEmail(e.target.value)} />
-          </div>
+              <div>
+                <label>Email</label>
+                <input value={partyEmail} onChange={(e) => setPartyEmail(e.target.value)} />
+              </div>
 
-          <div>
-            <label>Phone</label>
-            <input value={partyPhone} onChange={(e) => setPartyPhone(e.target.value)} />
-          </div>
+              <div>
+                <label>Phone</label>
+                <input value={partyPhone} onChange={(e) => setPartyPhone(e.target.value)} />
+              </div>
 
-          <div>
-            <label>Organization</label>
-            <input
-              value={partyOrganization}
-              onChange={(e) => setPartyOrganization(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Organization</label>
+                <input
+                  value={partyOrganization}
+                  onChange={(e) => setPartyOrganization(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Address</label>
-            <input
-              value={partyAddress}
-              onChange={(e) => setPartyAddress(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Address</label>
+                <input
+                  value={partyAddress}
+                  onChange={(e) => setPartyAddress(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Notes</label>
-            <input value={partyNotes} onChange={(e) => setPartyNotes(e.target.value)} />
-          </div>
+              <div>
+                <label>Notes</label>
+                <input value={partyNotes} onChange={(e) => setPartyNotes(e.target.value)} />
+              </div>
 
-          <button type="submit" disabled={savingParty}>
-            {savingParty ? "Saving..." : editingPartyId ? "Save Changes" : "Add Party"}
-          </button>
-          {editingPartyId && (
-            <button type="button" onClick={resetPartyForm}>
-              Cancel
-            </button>
-          )}
-        </form>
+              <button type="submit" disabled={savingParty}>
+                {savingParty ? "Saving..." : editingPartyId ? "Save Changes" : "Add Party"}
+              </button>
+              {editingPartyId && (
+                <button type="button" onClick={resetPartyForm}>
+                  Cancel
+                </button>
+              )}
+            </form>
+          </>
+        )}
       </section>
 
       {/* Tasks */}
@@ -972,13 +997,17 @@ const MatterDetailPage = () => {
                   <td>{task.createdBy ?? "-"}</td>
                   <td>{new Date(task.createdAt).toLocaleDateString()}</td>
                   <td>
-                    <button type="button" onClick={() => handleEditTask(task)}>
-                      Edit
-                    </button>
-                    {task.status !== "Completed" && (
-                      <button type="button" onClick={() => handleMarkComplete(task)}>
-                        Mark Complete
-                      </button>
+                    {!isClosed && (
+                      <>
+                        <button type="button" onClick={() => handleEditTask(task)}>
+                          Edit
+                        </button>
+                        {task.status !== "Completed" && (
+                          <button type="button" onClick={() => handleMarkComplete(task)}>
+                            Mark Complete
+                          </button>
+                        )}
+                      </>
                     )}
                   </td>
                 </tr>
@@ -987,82 +1016,88 @@ const MatterDetailPage = () => {
           </table>
         )}
 
-        <h3>{editingTaskId ? "Edit Task" : "Add Task"}</h3>
-        {taskError && <p style={{ color: "red" }}>{taskError}</p>}
+        {isClosed ? (
+          <p>This matter is closed. Tasks cannot be added or edited.</p>
+        ) : (
+          <>
+            <h3>{editingTaskId ? "Edit Task" : "Add Task"}</h3>
+            {taskError && <p style={{ color: "red" }}>{taskError}</p>}
 
-        <form onSubmit={handleSubmitTask}>
-          <div>
-            <label>Title</label>
-            <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
-          </div>
+            <form onSubmit={handleSubmitTask}>
+              <div>
+                <label>Title</label>
+                <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
+              </div>
 
-          <div>
-            <label>Description</label>
-            <input
-              value={taskDescription}
-              onChange={(e) => setTaskDescription(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Description</label>
+                <input
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Assigned To</label>
-            <input
-              value={taskAssignedTo}
-              onChange={(e) => setTaskAssignedTo(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Assigned To</label>
+                <input
+                  value={taskAssignedTo}
+                  onChange={(e) => setTaskAssignedTo(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Priority</label>
-            <select
-              value={taskPriority}
-              onChange={(e) => setTaskPriority(e.target.value)}
-            >
-              <option value="">-- Select Priority --</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-            </select>
-          </div>
+              <div>
+                <label>Priority</label>
+                <select
+                  value={taskPriority}
+                  onChange={(e) => setTaskPriority(e.target.value)}
+                >
+                  <option value="">-- Select Priority --</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
 
-          {editingTaskId && (
-            <div>
-              <label>Status</label>
-              <select
-                value={taskStatus}
-                onChange={(e) => setTaskStatus(e.target.value)}
-              >
-                {TASK_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+              {editingTaskId && (
+                <div>
+                  <label>Status</label>
+                  <select
+                    value={taskStatus}
+                    onChange={(e) => setTaskStatus(e.target.value)}
+                  >
+                    {TASK_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-          <div>
-            <label>Due Date</label>
-            <input
-              type="date"
-              value={taskDueDate}
-              onChange={(e) => setTaskDueDate(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Due Date</label>
+                <input
+                  type="date"
+                  value={taskDueDate}
+                  onChange={(e) => setTaskDueDate(e.target.value)}
+                />
+              </div>
 
-          <button type="submit" disabled={addingTask}>
-            {addingTask
-              ? "Saving..."
-              : editingTaskId
-              ? "Save Changes"
-              : "Add Task"}
-          </button>
-          {editingTaskId && (
-            <button type="button" onClick={resetTaskForm}>
-              Cancel
-            </button>
-          )}
-        </form>
+              <button type="submit" disabled={addingTask}>
+                {addingTask
+                  ? "Saving..."
+                  : editingTaskId
+                  ? "Save Changes"
+                  : "Add Task"}
+              </button>
+              {editingTaskId && (
+                <button type="button" onClick={resetTaskForm}>
+                  Cancel
+                </button>
+              )}
+            </form>
+          </>
+        )}
       </section>
 
       {/* Deadlines */}
@@ -1097,7 +1132,7 @@ const MatterDetailPage = () => {
                   <td>{deadline.status}</td>
                   <td>{deadline.locationOrCourt ?? "-"}</td>
                   <td>
-                    {deadline.status === "Scheduled" && (
+                    {!isClosed && deadline.status === "Scheduled" && (
                       <>
                         <button
                           type="button"
@@ -1132,70 +1167,76 @@ const MatterDetailPage = () => {
           </table>
         )}
 
-        <h3>Add Deadline</h3>
-        {deadlineError && <p style={{ color: "red" }}>{deadlineError}</p>}
+        {isClosed ? (
+          <p>This matter is closed. Deadlines cannot be added or updated.</p>
+        ) : (
+          <>
+            <h3>Add Deadline</h3>
+            {deadlineError && <p style={{ color: "red" }}>{deadlineError}</p>}
 
-        <form onSubmit={handleAddDeadline}>
-          <div>
-            <label>Title</label>
-            <input
-              value={deadlineTitle}
-              onChange={(e) => setDeadlineTitle(e.target.value)}
-            />
-          </div>
+            <form onSubmit={handleAddDeadline}>
+              <div>
+                <label>Title</label>
+                <input
+                  value={deadlineTitle}
+                  onChange={(e) => setDeadlineTitle(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Deadline Type</label>
-            <select
-              value={deadlineType}
-              onChange={(e) => setDeadlineType(e.target.value)}
-            >
-              <option value="">-- Select Deadline Type --</option>
-              <option value="Filing Deadline">Filing Deadline</option>
-              <option value="Court Hearing">Court Hearing</option>
-              <option value="Review Date">Review Date</option>
-              <option value="Consultation">Consultation</option>
-              <option value="Settlement Date">Settlement Date</option>
-            </select>
-          </div>
+              <div>
+                <label>Deadline Type</label>
+                <select
+                  value={deadlineType}
+                  onChange={(e) => setDeadlineType(e.target.value)}
+                >
+                  <option value="">-- Select Deadline Type --</option>
+                  <option value="Filing Deadline">Filing Deadline</option>
+                  <option value="Court Hearing">Court Hearing</option>
+                  <option value="Review Date">Review Date</option>
+                  <option value="Consultation">Consultation</option>
+                  <option value="Settlement Date">Settlement Date</option>
+                </select>
+              </div>
 
-          <div>
-            <label>Due Date / Time</label>
-            <input
-              type="datetime-local"
-              value={deadlineDueDateTime}
-              onChange={(e) => setDeadlineDueDateTime(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Due Date / Time</label>
+                <input
+                  type="datetime-local"
+                  value={deadlineDueDateTime}
+                  onChange={(e) => setDeadlineDueDateTime(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Responsible Person</label>
-            <input
-              value={deadlineResponsiblePerson}
-              onChange={(e) => setDeadlineResponsiblePerson(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Responsible Person</label>
+                <input
+                  value={deadlineResponsiblePerson}
+                  onChange={(e) => setDeadlineResponsiblePerson(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Location / Court</label>
-            <input
-              value={deadlineLocationOrCourt}
-              onChange={(e) => setDeadlineLocationOrCourt(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Location / Court</label>
+                <input
+                  value={deadlineLocationOrCourt}
+                  onChange={(e) => setDeadlineLocationOrCourt(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label>Notes</label>
-            <input
-              value={deadlineNotes}
-              onChange={(e) => setDeadlineNotes(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Notes</label>
+                <input
+                  value={deadlineNotes}
+                  onChange={(e) => setDeadlineNotes(e.target.value)}
+                />
+              </div>
 
-          <button type="submit" disabled={addingDeadline}>
-            {addingDeadline ? "Adding..." : "Add Deadline"}
-          </button>
-        </form>
+              <button type="submit" disabled={addingDeadline}>
+                {addingDeadline ? "Adding..." : "Add Deadline"}
+              </button>
+            </form>
+          </>
+        )}
       </section>
 
       {/* Documents */}
@@ -1239,46 +1280,52 @@ const MatterDetailPage = () => {
           </table>
         )}
 
-        <h3>Upload Document</h3>
-        {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
-        <form onSubmit={handleUpload}>
-          <div>
-            <label>File</label>
-            <input
-              type="file"
-              onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
+        {isClosed ? (
+          <p>This matter is closed. Documents cannot be uploaded.</p>
+        ) : (
+          <>
+            <h3>Upload Document</h3>
+            {uploadError && <p style={{ color: "red" }}>{uploadError}</p>}
+            <form onSubmit={handleUpload}>
+              <div>
+                <label>File</label>
+                <input
+                  type="file"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+                />
+              </div>
 
-          <div>
-            <label>Category</label>
-            <select
-              value={uploadCategory}
-              onChange={(e) => setUploadCategory(e.target.value)}
-            >
-              <option value="Client ID">Client ID</option>
-              <option value="Engagement Documents">Engagement Documents</option>
-              <option value="Pleadings">Pleadings</option>
-              <option value="Correspondence">Correspondence</option>
-              <option value="Court Documents">Court Documents</option>
-              <option value="Evidence">Evidence</option>
-              <option value="Contracts">Contracts</option>
-              <option value="Internal Draft">Internal Draft</option>
-            </select>
-          </div>
+              <div>
+                <label>Category</label>
+                <select
+                  value={uploadCategory}
+                  onChange={(e) => setUploadCategory(e.target.value)}
+                >
+                  <option value="Client ID">Client ID</option>
+                  <option value="Engagement Documents">Engagement Documents</option>
+                  <option value="Pleadings">Pleadings</option>
+                  <option value="Correspondence">Correspondence</option>
+                  <option value="Court Documents">Court Documents</option>
+                  <option value="Evidence">Evidence</option>
+                  <option value="Contracts">Contracts</option>
+                  <option value="Internal Draft">Internal Draft</option>
+                </select>
+              </div>
 
-          <div>
-            <label>Description</label>
-            <input
-              value={uploadDescription}
-              onChange={(e) => setUploadDescription(e.target.value)}
-            />
-          </div>
+              <div>
+                <label>Description</label>
+                <input
+                  value={uploadDescription}
+                  onChange={(e) => setUploadDescription(e.target.value)}
+                />
+              </div>
 
-          <button type="submit" disabled={uploading}>
-            {uploading ? "Uploading..." : "Upload"}
-          </button>
-        </form>
+              <button type="submit" disabled={uploading}>
+                {uploading ? "Uploading..." : "Upload"}
+              </button>
+            </form>
+          </>
+        )}
       </section>
     </div>
   );
