@@ -1,3 +1,4 @@
+using Azure;
 using LawFirm.Application.DTOs.Clients;
 using LawFirm.Application.DTOs.Intakes;
 using LawFirm.Application.DTOs.Matters;
@@ -123,7 +124,7 @@ public class DocumentService : IDocumentService
         }).ToList();
     }
 
-    public async Task<(Stream FileStream, string ContentType, string FileName)> DownloadIntakeDocumentAsync(int documentId)
+    public async Task<(Stream FileStream, string ContentType, string FileName)> DownloadDocumentAsync(int documentId)
     {
         var document = await _documentRepository.GetByIdAsync(documentId);
         if (document == null)
@@ -131,7 +132,16 @@ public class DocumentService : IDocumentService
             throw new KeyNotFoundException($"Document with id {documentId} was not found.");
         }
 
-        var stream = await _blobStorageService.DownloadFileAsync(ContainerName, document.BlobPath);
+        Stream stream;
+        try
+        {
+            stream = await _blobStorageService.DownloadFileAsync(ContainerName, document.BlobPath);
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            throw new KeyNotFoundException($"The file for document with id {documentId} could not be found in storage.");
+        }
+
         return (stream, document.ContentType, document.OriginalFileName);
     }
 
