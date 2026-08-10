@@ -17,7 +17,7 @@ public class DocumentsController : ControllerBase
     [HttpGet("{id}/download")]
     public async Task<IActionResult> DownloadDocument(int id)
     {
-        var (fileStream, contentType, fileName) = await _documentService.DownloadIntakeDocumentAsync(id);
+        var (fileStream, contentType, fileName) = await _documentService.DownloadDocumentAsync(id);
         return File(fileStream, contentType, fileName);
     }
 }
