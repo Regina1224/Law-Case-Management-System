@@ -164,31 +164,7 @@ public class MatterService : IMatterService
             throw new KeyNotFoundException($"Matter with id {id} was not found.");
         }
 
-        return new MatterDetailDto
-        {
-            MatterId = matter.MatterId,
-            MatterNumber = matter.MatterNumber,
-            MatterTitle = matter.MatterTitle,
-            ClientId = matter.ClientId,
-            ClientCode = matter.Client.ClientCode,
-            ClientName = matter.Client.ClientType == "Individual"
-                ? $"{matter.Client.FirstName} {matter.Client.LastName}".Trim()
-                : matter.Client.OrganizationName ?? "",
-            MatterTypeId = matter.MatterTypeId,
-            MatterTypeName = matter.MatterType.Name,
-            PracticeAreaId = matter.PracticeAreaId,
-            PracticeAreaName = matter.PracticeArea.Name,
-            ResponsibleLawyer = matter.ResponsibleLawyer,
-            SupportingStaff = matter.SupportingStaff,
-            Status = matter.Status,
-            Priority = matter.Priority,
-            Summary = matter.Summary,
-            OpenedDate = matter.OpenedDate,
-            TargetCloseDate = matter.TargetCloseDate,
-            ClosedDate = matter.ClosedDate,
-            IsConfidential = matter.IsConfidential,
-            CreatedAt = matter.CreatedAt
-        };
+        return MapToMatterDetailDto(matter);
     }
 
     public async Task<MatterDetailDto> UpdateMatterAsync(int id, UpdateMatterDto dto)
@@ -218,30 +194,66 @@ public class MatterService : IMatterService
 
         var updated = await _matterRepository.UpdateAsync(matter);
 
+        return MapToMatterDetailDto(updated);
+    }
+
+    public async Task<MatterDetailDto> CloseMatterAsync(int id, CloseMatterDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        if (matter.Status == "Closed")
+        {
+            throw new ArgumentException("This matter has already been closed.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.ClosureReason))
+        {
+            throw new ArgumentException("Closure reason is required.");
+        }
+
+        matter.Status = "Closed";
+        matter.ClosedDate = dto.ClosureDate;
+        matter.ClosureReason = dto.ClosureReason;
+        matter.ClosureNotes = dto.ClosureNotes;
+        matter.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRepository.UpdateAsync(matter);
+
+        return MapToMatterDetailDto(updated);
+    }
+
+    private static MatterDetailDto MapToMatterDetailDto(Matter matter)
+    {
         return new MatterDetailDto
         {
-            MatterId = updated.MatterId,
-            MatterNumber = updated.MatterNumber,
-            MatterTitle = updated.MatterTitle,
-            ClientId = updated.ClientId,
-            ClientCode = updated.Client.ClientCode,
-            ClientName = updated.Client.ClientType == "Individual"
-                ? $"{updated.Client.FirstName} {updated.Client.LastName}".Trim()
-                : updated.Client.OrganizationName ?? "",
-            MatterTypeId = updated.MatterTypeId,
-            MatterTypeName = updated.MatterType.Name,
-            PracticeAreaId = updated.PracticeAreaId,
-            PracticeAreaName = updated.PracticeArea.Name,
-            ResponsibleLawyer = updated.ResponsibleLawyer,
-            SupportingStaff = updated.SupportingStaff,
-            Status = updated.Status,
-            Priority = updated.Priority,
-            Summary = updated.Summary,
-            OpenedDate = updated.OpenedDate,
-            TargetCloseDate = updated.TargetCloseDate,
-            ClosedDate = updated.ClosedDate,
-            IsConfidential = updated.IsConfidential,
-            CreatedAt = updated.CreatedAt
+            MatterId = matter.MatterId,
+            MatterNumber = matter.MatterNumber,
+            MatterTitle = matter.MatterTitle,
+            ClientId = matter.ClientId,
+            ClientCode = matter.Client.ClientCode,
+            ClientName = matter.Client.ClientType == "Individual"
+                ? $"{matter.Client.FirstName} {matter.Client.LastName}".Trim()
+                : matter.Client.OrganizationName ?? "",
+            MatterTypeId = matter.MatterTypeId,
+            MatterTypeName = matter.MatterType.Name,
+            PracticeAreaId = matter.PracticeAreaId,
+            PracticeAreaName = matter.PracticeArea.Name,
+            ResponsibleLawyer = matter.ResponsibleLawyer,
+            SupportingStaff = matter.SupportingStaff,
+            Status = matter.Status,
+            Priority = matter.Priority,
+            Summary = matter.Summary,
+            OpenedDate = matter.OpenedDate,
+            TargetCloseDate = matter.TargetCloseDate,
+            ClosedDate = matter.ClosedDate,
+            ClosureReason = matter.ClosureReason,
+            ClosureNotes = matter.ClosureNotes,
+            IsConfidential = matter.IsConfidential,
+            CreatedAt = matter.CreatedAt
         };
     }
 

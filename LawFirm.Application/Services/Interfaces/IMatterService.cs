@@ -16,6 +16,8 @@ public interface IMatterService
 
     Task<MatterDetailDto> UpdateMatterAsync(int id, UpdateMatterDto dto);
 
+    Task<MatterDetailDto> CloseMatterAsync(int id, CloseMatterDto dto);
+
     Task<MatterNoteDto> AddMatterNoteAsync(int matterId, CreateMatterNoteDto dto);
 
     Task<List<MatterNoteDto>> GetMatterNotesAsync(int matterId);

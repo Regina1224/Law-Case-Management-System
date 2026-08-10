@@ -78,6 +78,8 @@ export interface MatterDetail {
   openedDate: string;
   targetCloseDate: string | null;
   closedDate: string | null;
+  closureReason: string | null;
+  closureNotes: string | null;
   isConfidential: boolean;
   createdAt: string;
 }
@@ -100,5 +102,19 @@ export const updateMatter = async (
   dto: UpdateMatterDto
 ): Promise<MatterDetail> => {
   const response = await apiClient.put(`/matters/${id}`, dto);
+  return response.data.data;
+};
+
+export interface CloseMatterDto {
+  closureDate: string;
+  closureReason: string;
+  closureNotes?: string;
+}
+
+export const closeMatter = async (
+  id: number,
+  dto: CloseMatterDto
+): Promise<MatterDetail> => {
+  const response = await apiClient.put(`/matters/${id}/close`, dto);
   return response.data.data;
 };
