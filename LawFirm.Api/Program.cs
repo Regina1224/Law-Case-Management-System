@@ -66,6 +66,9 @@ builder.Services.AddScoped<IMatterRelatedPartyRepository, MatterRelatedPartyRepo
 builder.Services.AddScoped<IMatterTaskRepository, MatterTaskRepository>();
 // Matter deadline
 builder.Services.AddScoped<IMatterDeadlineRepository, MatterDeadlineRepository>();
+// App user
+builder.Services.AddScoped<IAppUserRepository, AppUserRepository>();
+builder.Services.AddScoped<IAppUserService, AppUserService>();
 
 
 var app = builder.Build();

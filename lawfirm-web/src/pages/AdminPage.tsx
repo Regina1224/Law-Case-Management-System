@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import type { PracticeAreaDto } from "../services/practiceAreaService";
 import practiceAreaService from "../services/practiceAreaService";
 
@@ -13,7 +14,7 @@ const AdminPage = () => {
                 const response = await practiceAreaService.getAll();
                 setPracticeAreas(response.data.data);
                 setLoading(false);
-            } catch (err){
+            } catch {
                 setError('Failed to load practice areas');
                 setLoading(false);
 
@@ -26,7 +27,7 @@ const AdminPage = () => {
         try{
             await practiceAreaService.delete(id);   
             setPracticeAreas(prev=>prev.filter(pa=>pa.id !== id));
-            } catch (err){
+            } catch {
                 setError('Failed to delete');
                 setLoading(false);
 
@@ -37,6 +38,7 @@ const AdminPage = () => {
 
     return(
         <div>
+            <Link to="/admin/users">Application Users</Link>
             <h1>Reference Data - Practice Areas</h1>
             <table>
                 <thead>

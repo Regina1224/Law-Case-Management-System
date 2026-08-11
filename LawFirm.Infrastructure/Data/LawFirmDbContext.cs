@@ -17,6 +17,7 @@ public class LawFirmDbContext : DbContext
     public DbSet<MatterRelatedParty> MatterRelatedParties => Set<MatterRelatedParty>();
     public DbSet<MatterTask> MatterTasks => Set<MatterTask>();
     public DbSet<MatterDeadline> MatterDeadlines => Set<MatterDeadline>();
+    public DbSet<AppUser> AppUsers => Set<AppUser>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -60,6 +61,10 @@ public class LawFirmDbContext : DbContext
             .HasForeignKey(m => m.SourceIntakeId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
+
+        modelBuilder.Entity<AppUser>()
+            .HasIndex(u => u.EntraObjectId)
+            .IsUnique();
     }
 
 
