@@ -5,6 +5,7 @@ import ClientsPage from "../pages/ClientsPage"
 import IntakesPage from "../pages/IntakesPage"
 import MattersPage from "../pages/MattersPage"
 import AdminPage from "../pages/AdminPage"
+import AppUsersPage from "../pages/AppUsersPage"
 import CreateClientPage from "../pages/CreateClientPage"
 import ClientDetailPage from "../pages/ClientDetailPage"
 import EditClientPage from "../pages/EditClientPage"
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
             { path: 'matters/create', element: <CreateMatterPage /> },
             { path: 'matters/:id', element: <MatterDetailPage /> },
             {path: 'admin', element: <AdminPage />},
+            {path: 'admin/users', element: <AppUsersPage />},
         ]
     },
 
