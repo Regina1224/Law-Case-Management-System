@@ -18,6 +18,10 @@ public interface IMatterService
 
     Task<MatterDetailDto> CloseMatterAsync(int id, CloseMatterDto dto);
 
+    Task<MatterDetailDto> ArchiveMatterAsync(int id);
+
+    Task<MatterDetailDto> UnarchiveMatterAsync(int id);
+
     Task<MatterNoteDto> AddMatterNoteAsync(int matterId, CreateMatterNoteDto dto);
 
     Task<List<MatterNoteDto>> GetMatterNotesAsync(int matterId);

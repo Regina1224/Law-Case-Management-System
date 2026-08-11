@@ -4,6 +4,8 @@ import {
   getMatterById,
   updateMatter,
   closeMatter,
+  archiveMatter,
+  unarchiveMatter,
   type MatterDetail,
 } from "../services/matterService";
 import {
@@ -44,7 +46,6 @@ const MATTER_STATUSES = [
   "In Progress",
   "Awaiting External Response",
   "On Hold",
-  "Archived",
 ];
 
 const TASK_STATUSES = [
@@ -143,6 +144,10 @@ const MatterDetailPage = () => {
   const [closureNotes, setClosureNotes] = useState("");
   const [closingMatter, setClosingMatter] = useState(false);
   const [closeError, setCloseError] = useState<string | null>(null);
+
+  // Archive matter
+  const [archiving, setArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMatter = async () => {
@@ -282,6 +287,34 @@ const MatterDetailPage = () => {
       setCloseError("Failed to close matter.");
     } finally {
       setClosingMatter(false);
+    }
+  };
+
+  const handleArchiveMatter = async () => {
+    setArchiving(true);
+    setArchiveError(null);
+
+    try {
+      const updated = await archiveMatter(matterId);
+      setMatter(updated);
+    } catch {
+      setArchiveError("Failed to archive matter.");
+    } finally {
+      setArchiving(false);
+    }
+  };
+
+  const handleUnarchiveMatter = async () => {
+    setArchiving(true);
+    setArchiveError(null);
+
+    try {
+      const updated = await unarchiveMatter(matterId);
+      setMatter(updated);
+    } catch {
+      setArchiveError("Failed to unarchive matter.");
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -558,7 +591,7 @@ const MatterDetailPage = () => {
   if (error) return <div style={{ color: "red" }}>{error}</div>;
   if (!matter) return null;
 
-  const isClosed = matter.status === "Closed";
+  const isReadOnly = matter.status === "Closed" || matter.status === "Archived";
 
   return (
     <div>
@@ -628,7 +661,25 @@ const MatterDetailPage = () => {
       <section>
         <h2>Close Matter</h2>
 
-        {matter.status === "Closed" ? (
+        {matter.status === "Archived" ? (
+          <div>
+            <p>This matter is archived.</p>
+            <p>
+              Closed Date:{" "}
+              {matter.closedDate
+                ? new Date(matter.closedDate).toLocaleDateString()
+                : "-"}
+            </p>
+            <p>Closure Reason: {matter.closureReason ?? "-"}</p>
+            <p>Closure Notes: {matter.closureNotes ?? "-"}</p>
+
+            {archiveError && <p style={{ color: "red" }}>{archiveError}</p>}
+
+            <button type="button" onClick={handleUnarchiveMatter} disabled={archiving}>
+              {archiving ? "Unarchiving..." : "Unarchive Matter"}
+            </button>
+          </div>
+        ) : matter.status === "Closed" ? (
           <div>
             <p>This matter is closed.</p>
             <p>
@@ -639,6 +690,12 @@ const MatterDetailPage = () => {
             </p>
             <p>Closure Reason: {matter.closureReason ?? "-"}</p>
             <p>Closure Notes: {matter.closureNotes ?? "-"}</p>
+
+            {archiveError && <p style={{ color: "red" }}>{archiveError}</p>}
+
+            <button type="button" onClick={handleArchiveMatter} disabled={archiving}>
+              {archiving ? "Archiving..." : "Archive Matter"}
+            </button>
           </div>
         ) : (
           <>
@@ -692,8 +749,8 @@ const MatterDetailPage = () => {
       <section>
         <h2>Edit Assignment / Status</h2>
 
-        {isClosed ? (
-          <p>This matter is closed and cannot be edited.</p>
+        {isReadOnly ? (
+          <p>This matter is closed or archived and cannot be edited.</p>
         ) : (
           <>
             {saveError && <p style={{ color: "red" }}>{saveError}</p>}
@@ -773,8 +830,8 @@ const MatterDetailPage = () => {
           </div>
         )}
 
-        {isClosed ? (
-          <p>This matter is closed. Notes cannot be added.</p>
+        {isReadOnly ? (
+          <p>This matter is closed or archived. Notes cannot be added.</p>
         ) : (
           <>
             <h3>Add Note</h3>
@@ -838,7 +895,7 @@ const MatterDetailPage = () => {
                   <td>{party.phone ?? "-"}</td>
                   <td>{party.organization ?? "-"}</td>
                   <td>
-                    {!isClosed && (
+                    {!isReadOnly && (
                       <>
                         <button type="button" onClick={() => handleEditParty(party)}>
                           Edit
@@ -860,8 +917,8 @@ const MatterDetailPage = () => {
           </table>
         )}
 
-        {isClosed ? (
-          <p>This matter is closed. Related parties cannot be added or edited.</p>
+        {isReadOnly ? (
+          <p>This matter is closed or archived. Related parties cannot be added or edited.</p>
         ) : (
           <>
             <h3>{editingPartyId ? "Edit Related Party" : "Add Related Party"}</h3>
@@ -997,7 +1054,7 @@ const MatterDetailPage = () => {
                   <td>{task.createdBy ?? "-"}</td>
                   <td>{new Date(task.createdAt).toLocaleDateString()}</td>
                   <td>
-                    {!isClosed && (
+                    {!isReadOnly && (
                       <>
                         <button type="button" onClick={() => handleEditTask(task)}>
                           Edit
@@ -1016,8 +1073,8 @@ const MatterDetailPage = () => {
           </table>
         )}
 
-        {isClosed ? (
-          <p>This matter is closed. Tasks cannot be added or edited.</p>
+        {isReadOnly ? (
+          <p>This matter is closed or archived. Tasks cannot be added or edited.</p>
         ) : (
           <>
             <h3>{editingTaskId ? "Edit Task" : "Add Task"}</h3>
@@ -1132,7 +1189,7 @@ const MatterDetailPage = () => {
                   <td>{deadline.status}</td>
                   <td>{deadline.locationOrCourt ?? "-"}</td>
                   <td>
-                    {!isClosed && deadline.status === "Scheduled" && (
+                    {!isReadOnly && deadline.status === "Scheduled" && (
                       <>
                         <button
                           type="button"
@@ -1167,8 +1224,8 @@ const MatterDetailPage = () => {
           </table>
         )}
 
-        {isClosed ? (
-          <p>This matter is closed. Deadlines cannot be added or updated.</p>
+        {isReadOnly ? (
+          <p>This matter is closed or archived. Deadlines cannot be added or updated.</p>
         ) : (
           <>
             <h3>Add Deadline</h3>
@@ -1280,8 +1337,8 @@ const MatterDetailPage = () => {
           </table>
         )}
 
-        {isClosed ? (
-          <p>This matter is closed. Documents cannot be uploaded.</p>
+        {isReadOnly ? (
+          <p>This matter is closed or archived. Documents cannot be uploaded.</p>
         ) : (
           <>
             <h3>Upload Document</h3>

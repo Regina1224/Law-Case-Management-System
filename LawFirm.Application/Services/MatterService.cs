@@ -228,6 +228,48 @@ public class MatterService : IMatterService
         return MapToMatterDetailDto(updated);
     }
 
+    public async Task<MatterDetailDto> ArchiveMatterAsync(int id)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        if (matter.Status != "Closed")
+        {
+            throw new ArgumentException("Only closed matters can be archived.");
+        }
+
+        matter.Status = "Archived";
+        matter.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRepository.UpdateAsync(matter);
+
+        return MapToMatterDetailDto(updated);
+    }
+
+    public async Task<MatterDetailDto> UnarchiveMatterAsync(int id)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        if (matter.Status != "Archived")
+        {
+            throw new ArgumentException("Only archived matters can be unarchived.");
+        }
+
+        matter.Status = "Closed";
+        matter.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRepository.UpdateAsync(matter);
+
+        return MapToMatterDetailDto(updated);
+    }
+
     private static void EnsureMatterIsNotClosed(Matter matter)
     {
         if (matter.Status == "Closed")

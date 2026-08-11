@@ -38,6 +38,10 @@ public class MatterRepository : IMatterRepository
         {
             query = query.Where(m => m.Status == status);
         }
+        else
+        {
+            query = query.Where(m => m.Status != "Archived");
+        }
 
         if (practiceAreaId.HasValue)
         {
