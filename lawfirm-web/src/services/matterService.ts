@@ -118,3 +118,13 @@ export const closeMatter = async (
   const response = await apiClient.put(`/matters/${id}/close`, dto);
   return response.data.data;
 };
+
+export const archiveMatter = async (id: number): Promise<MatterDetail> => {
+  const response = await apiClient.put(`/matters/${id}/archive`);
+  return response.data.data;
+};
+
+export const unarchiveMatter = async (id: number): Promise<MatterDetail> => {
+  const response = await apiClient.put(`/matters/${id}/unarchive`);
+  return response.data.data;
+};

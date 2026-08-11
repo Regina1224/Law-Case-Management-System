@@ -58,4 +58,18 @@ public class MattersController : ControllerBase
         var result = await _matterService.CloseMatterAsync(id, dto);
         return Ok(ApiResponse<MatterDetailDto>.Ok(result));
     }
+
+    [HttpPut("{id}/archive")]
+    public async Task<IActionResult> ArchiveMatter(int id)
+    {
+        var result = await _matterService.ArchiveMatterAsync(id);
+        return Ok(ApiResponse<MatterDetailDto>.Ok(result));
+    }
+
+    [HttpPut("{id}/unarchive")]
+    public async Task<IActionResult> UnarchiveMatter(int id)
+    {
+        var result = await _matterService.UnarchiveMatterAsync(id);
+        return Ok(ApiResponse<MatterDetailDto>.Ok(result));
+    }
 }
