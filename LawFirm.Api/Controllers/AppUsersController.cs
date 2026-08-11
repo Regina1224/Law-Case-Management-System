@@ -22,4 +22,11 @@ public class AppUsersController : ControllerBase
         var result = await _appUserService.GetAppUsersAsync();
         return Ok(ApiResponse<List<AppUserDto>>.Ok(result));
     }
+
+    [HttpPut("{id}/role")]
+    public async Task<IActionResult> UpdateAppUserRole(int id, [FromBody] UpdateAppUserRoleDto dto)
+    {
+        var result = await _appUserService.UpdateAppUserRoleAsync(id, dto);
+        return Ok(ApiResponse<AppUserDto>.Ok(result));
+    }
 }

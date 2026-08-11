@@ -9,6 +9,15 @@ public class AppUserService : IAppUserService
 {
     private const string DefaultRoleForNewUsers = "SystemAdmin";
 
+    private static readonly string[] AllowedRoles =
+    [
+        "SystemAdmin",
+        "Partner",
+        "Lawyer",
+        "Paralegal",
+        "AdminStaff"
+    ];
+
     private readonly IAppUserRepository _appUserRepository;
 
     public AppUserService(IAppUserRepository appUserRepository)
@@ -51,6 +60,26 @@ public class AppUserService : IAppUserService
         existing.UpdatedAt = now;
 
         var updated = await _appUserRepository.UpdateAsync(existing);
+        return MapToAppUserDto(updated);
+    }
+
+    public async Task<AppUserDto> UpdateAppUserRoleAsync(int appUserId, UpdateAppUserRoleDto dto)
+    {
+        if (!AllowedRoles.Contains(dto.Role))
+        {
+            throw new ArgumentException($"Role must be one of: {string.Join(", ", AllowedRoles)}.");
+        }
+
+        var appUser = await _appUserRepository.GetByIdAsync(appUserId);
+        if (appUser == null)
+        {
+            throw new KeyNotFoundException($"Application user with id {appUserId} was not found.");
+        }
+
+        appUser.Role = dto.Role;
+        appUser.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _appUserRepository.UpdateAsync(appUser);
         return MapToAppUserDto(updated);
     }
 

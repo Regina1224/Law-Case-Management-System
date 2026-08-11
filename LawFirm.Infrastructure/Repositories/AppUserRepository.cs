@@ -22,6 +22,12 @@ public class AppUserRepository : IAppUserRepository
             .ToListAsync();
     }
 
+    public async Task<AppUser?> GetByIdAsync(int id)
+    {
+        return await _dbContext.AppUsers
+            .FirstOrDefaultAsync(u => u.AppUserId == id);
+    }
+
     public async Task<AppUser?> GetByEntraObjectIdAsync(string entraObjectId)
     {
         return await _dbContext.AppUsers

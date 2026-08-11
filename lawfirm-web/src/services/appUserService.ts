@@ -13,3 +13,11 @@ export const getAppUsers = async (): Promise<AppUser[]> => {
   const response = await apiClient.get("/appusers");
   return response.data.data;
 };
+
+export const updateAppUserRole = async (
+  id: number,
+  role: string
+): Promise<AppUser> => {
+  const response = await apiClient.put(`/appusers/${id}/role`, { role });
+  return response.data.data;
+};
