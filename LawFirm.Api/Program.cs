@@ -15,6 +15,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+// Application Insights: only wire up telemetry when a connection string is actually configured,
+// since the SDK throws at startup rather than no-op on an empty/missing one.
+var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrWhiteSpace(appInsightsConnectionString))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 // DI connect DB
 builder.Services.AddDbContext<LawFirmDbContext>(options =>
     options.UseSqlServer(
