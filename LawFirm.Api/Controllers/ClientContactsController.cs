@@ -1,14 +1,12 @@
 using LawFirm.Application.DTOs.Clients;
 using LawFirm.Application.Services.Interfaces;
 using LawFirm.Shared.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LawFirm.Api.Controllers
 {
     [ApiController]
     [Route("api/clients/{clientId}/contacts")]
-    //[Authorize]
     public class ClientContactsController : ControllerBase
     {
         private readonly IClientService _clientService;
