@@ -31,17 +31,17 @@ public class ExceptionMiddleware
     {
         context.Response.ContentType = "application/json";
 
-        var (statusCode, message) = exception switch
+        var (statusCode, code, message) = exception switch
         {
-            KeyNotFoundException => (HttpStatusCode.NotFound, exception.Message),
-            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, exception.Message),
-            ArgumentException => (HttpStatusCode.BadRequest, exception.Message),
-            _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
+            KeyNotFoundException => (HttpStatusCode.NotFound, "NOT_FOUND", exception.Message),
+            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "UNAUTHORIZED", exception.Message),
+            ArgumentException => (HttpStatusCode.BadRequest, "VALIDATION_ERROR", exception.Message),
+            _ => (HttpStatusCode.InternalServerError, "INTERNAL_ERROR", "An unexpected error occurred")
         };
 
         context.Response.StatusCode = (int)statusCode;
 
-        var response = ApiResponse<object>.Fail(message);
+        var response = ApiResponse<object>.Fail(message, code);
         var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase

@@ -29,7 +29,7 @@ namespace LawFirm.Api.Controllers
             var result = await _matterTypeService.GetByIdAsync(id);
             if (result == null)
             {
-                return NotFound(ApiResponse<MatterTypeDto>.Fail("Not found"));
+                return NotFound(ApiResponse<MatterTypeDto>.Fail("Not found", "NOT_FOUND"));
             }
             return Ok(ApiResponse<MatterTypeDto>.Ok(result));
         }
