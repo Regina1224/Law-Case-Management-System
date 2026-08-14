@@ -1,7 +1,6 @@
 using LawFirm.Application.DTOs.Clients;
 using LawFirm.Application.Services.Interfaces;
 using LawFirm.Shared.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 
@@ -9,7 +8,6 @@ namespace LawFirm.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
     public class ClientsController : ControllerBase
     {
         private readonly IClientService _clientService;

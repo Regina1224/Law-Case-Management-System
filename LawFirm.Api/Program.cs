@@ -1,3 +1,4 @@
+using LawFirm.Api.Authorization;
 using LawFirm.Api.Middleware;
 using LawFirm.Application.Services;
 using LawFirm.Application.Services.Interfaces;
@@ -5,6 +6,8 @@ using LawFirm.Infrastructure.Data;
 using LawFirm.Infrastructure.Repositories;
 using LawFirm.Infrastructure.Repositories.Interfaces;
 using LawFirm.Infrastructure.Storage;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Scalar.AspNetCore;
@@ -31,9 +34,18 @@ builder.Services.AddDbContext<LawFirmDbContext>(options =>
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("SystemAdminOnly", policy =>
+        policy.Requirements.Add(new SystemAdminRequirement()));
+});
+builder.Services.AddScoped<IAuthorizationHandler, SystemAdminAuthorizationHandler>();
 
-builder.Services.AddControllers();
+// All endpoints require authentication by default; opt out with [AllowAnonymous].
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(new AuthorizeFilter());
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>

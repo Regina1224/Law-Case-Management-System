@@ -1,14 +1,12 @@
 using LawFirm.Application.DTOs.ReferenceData;
 using LawFirm.Application.Services.Interfaces;
 using LawFirm.Shared.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LawFirm.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
     public class PracticeAreasController : ControllerBase
     {
         private readonly IPracticeAreaService _practiceAreaService;

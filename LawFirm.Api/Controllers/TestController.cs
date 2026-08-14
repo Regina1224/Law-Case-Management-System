@@ -9,6 +9,7 @@ namespace LawFirm.Api.Controllers
     public class TestController : ControllerBase
     {
         [HttpGet("public")]
+        [AllowAnonymous]
         public ActionResult<ApiResponse<string>> GetPublic()
         {
             var data = "This is public endpoint, no need login";

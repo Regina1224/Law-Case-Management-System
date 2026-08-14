@@ -1,12 +1,14 @@
 using LawFirm.Application.DTOs.AppUsers;
 using LawFirm.Application.Services.Interfaces;
 using LawFirm.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LawFirm.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "SystemAdminOnly")]
 public class AppUsersController : ControllerBase
 {
     private readonly IAppUserService _appUserService;

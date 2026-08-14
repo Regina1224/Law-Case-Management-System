@@ -2,14 +2,12 @@ using Azure;
 using LawFirm.Application.DTOs.Intakes;
 using LawFirm.Application.Services.Interfaces;
 using LawFirm.Shared.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LawFirm.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-//[Authorize]
 public class IntakesController : ControllerBase
 {
     private readonly IIntakeService _intakeService;
