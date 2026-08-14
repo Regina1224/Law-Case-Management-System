@@ -29,7 +29,7 @@ namespace LawFirm.Api.Controllers
             var result = await _practiceAreaService.GetByIdAsync(id);
             if (result == null)
             {
-                return NotFound(ApiResponse<PracticeAreaDto>.Fail("Not found"));
+                return NotFound(ApiResponse<PracticeAreaDto>.Fail("Not found", "NOT_FOUND"));
             }
             return Ok(ApiResponse<PracticeAreaDto>.Ok(result));
         }

@@ -6,7 +6,9 @@ using LawFirm.Infrastructure.Data;
 using LawFirm.Infrastructure.Repositories;
 using LawFirm.Infrastructure.Repositories.Interfaces;
 using LawFirm.Infrastructure.Storage;
+using LawFirm.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
@@ -45,6 +47,21 @@ builder.Services.AddScoped<IAuthorizationHandler, SystemAdminAuthorizationHandle
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add(new AuthorizeFilter());
+})
+.ConfigureApiBehaviorOptions(options =>
+{
+    // Keep automatic model-binding validation failures in the same ApiResponse<T>
+    // envelope as everything else, instead of the default ValidationProblemDetails shape.
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(kvp => kvp.Value?.Errors.Count > 0)
+            .SelectMany(kvp => kvp.Value!.Errors.Select(e => $"{kvp.Key}: {e.ErrorMessage}"))
+            .ToList();
+
+        var response = ApiResponse<object>.Fail("One or more validation errors occurred.", "VALIDATION_ERROR", errors);
+        return new BadRequestObjectResult(response);
+    };
 });
 builder.Services.AddCors(options =>
 {
