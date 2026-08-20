@@ -29,5 +29,12 @@ namespace LawFirm.Api.Controllers
             var result = await _clientService.AddClientNoteAsync(clientId, dto);
             return Ok(ApiResponse<ClientNoteDto>.Ok(result));
         }
+
+        [HttpDelete("{noteId}")]
+        public async Task<IActionResult> DeleteNote(int clientId, int noteId)
+        {
+            var result = await _clientService.DeactivateClientNoteAsync(clientId, noteId);
+            return Ok(ApiResponse<ClientNoteDto>.Ok(result));
+        }
     }
 }

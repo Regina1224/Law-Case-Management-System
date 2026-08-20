@@ -29,3 +29,11 @@ export const createClientNote = async (
   const response = await apiClient.post(`/clients/${clientId}/notes`, data);
   return response.data.data;
 };
+
+export const deleteClientNote = async (
+  clientId: number,
+  noteId: number
+): Promise<ClientNote> => {
+  const response = await apiClient.delete(`/clients/${clientId}/notes/${noteId}`);
+  return response.data.data;
+};

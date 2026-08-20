@@ -29,8 +29,9 @@ namespace LawFirm.Infrastructure.Repositories
             {
                 query = query.Where(
                     c=>c.ClientCode.Contains(keyword)
-                    || c.FirstName != null && c.FirstName.Contains(keyword) 
+                    || c.FirstName != null && c.FirstName.Contains(keyword)
                     || c.LastName != null && c.LastName.Contains(keyword)
+                    || c.FirstName != null && c.LastName != null && (c.FirstName + " " + c.LastName).Contains(keyword)
                     || c.OrganizationName != null && c.OrganizationName.Contains(keyword)
                     || c.Email != null && c.Email.Contains(keyword));
             }

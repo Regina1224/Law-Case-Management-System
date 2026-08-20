@@ -23,6 +23,8 @@ public interface IClientService
     Task<ClientNoteDto> AddClientNoteAsync(int clientId, CreateClientNoteDto dto);
     
     Task<List<ClientNoteDto>> GetClientNotesAsync(int clientId);
+
+    Task<ClientNoteDto> DeactivateClientNoteAsync(int clientId, int noteId);
     
 
 

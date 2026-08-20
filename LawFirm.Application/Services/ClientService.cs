@@ -362,6 +362,36 @@ public class ClientService : IClientService
             CreatedAt = n.CreatedAt
         }).ToList();
     }
+
+    public async Task<ClientNoteDto> DeactivateClientNoteAsync(int clientId, int noteId)
+    {
+        var client = await _clientRepository.GetByIdAsync(clientId);
+        if (client == null)
+        {
+            throw new KeyNotFoundException($"Client with id {clientId} was not found.");
+        }
+
+        var note = await _clientNoteRepository.GetByIdAsync(noteId);
+        if (note == null || note.ClientId != clientId)
+        {
+            throw new KeyNotFoundException($"Note with id {noteId} was not found for client {clientId}.");
+        }
+
+        note.IsActive = false;
+        note.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _clientNoteRepository.UpdateAsync(note);
+
+        return new ClientNoteDto
+        {
+            ClientNoteId = updated.ClientNoteId,
+            ClientId = updated.ClientId,
+            NoteTitle = updated.NoteTitle,
+            NoteContent = updated.NoteContent,
+            NoteType = updated.NoteType,
+            CreatedAt = updated.CreatedAt
+        };
+    }
 }
 
 
