@@ -184,8 +184,3 @@ export const uploadIntakeDocument = async (
   );
   return response.data.data;
 };
-
-// Document download link
-export const getDocumentDownloadUrl = (documentId: number): string => {
-  return `${apiClient.defaults.baseURL}/documents/${documentId}/download`;
-};

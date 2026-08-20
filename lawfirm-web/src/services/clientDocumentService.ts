@@ -17,10 +17,6 @@ export const getClientDocuments = async (
   return response.data.data;
 };
 
-export const getDocumentDownloadUrl = (documentId: number): string => {
-  return `${apiClient.defaults.baseURL}/documents/${documentId}/download`;
-};
-
 export const uploadClientDocument = async (
   clientId: number,
   file: File,

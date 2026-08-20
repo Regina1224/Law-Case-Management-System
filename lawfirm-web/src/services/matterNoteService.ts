@@ -29,3 +29,11 @@ export const createMatterNote = async (
   const response = await apiClient.post(`/matters/${matterId}/notes`, data);
   return response.data.data;
 };
+
+export const deleteMatterNote = async (
+  matterId: number,
+  noteId: number
+): Promise<MatterNote> => {
+  const response = await apiClient.delete(`/matters/${matterId}/notes/${noteId}`);
+  return response.data.data;
+};

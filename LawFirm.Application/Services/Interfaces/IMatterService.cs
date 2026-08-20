@@ -26,6 +26,8 @@ public interface IMatterService
 
     Task<List<MatterNoteDto>> GetMatterNotesAsync(int matterId);
 
+    Task<MatterNoteDto> DeactivateMatterNoteAsync(int matterId, int noteId);
+
     Task<MatterRelatedPartyDto> AddMatterRelatedPartyAsync(int matterId, CreateMatterRelatedPartyDto dto);
 
     Task<List<MatterRelatedPartyDto>> GetMatterRelatedPartiesAsync(int matterId);

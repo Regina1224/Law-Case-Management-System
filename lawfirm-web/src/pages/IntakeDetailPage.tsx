@@ -5,12 +5,12 @@ import {
   updateIntake,
   getIntakeDocuments,
   uploadIntakeDocument,
-  getDocumentDownloadUrl,
   convertIntake,
   type IntakeDetail,
   type IntakeDocument,
   type ConvertIntakeResult,
 } from "../services/intakeService";
+import { downloadDocument } from "../services/documentDownload";
 import practiceAreaService, {
   type PracticeAreaDto,
 } from "../services/practiceAreaService";
@@ -643,13 +643,12 @@ const IntakeDetailPage = () => {
                 <td>{(doc.fileSizeBytes / 1024).toFixed(1)} KB</td>
                 <td>{new Date(doc.uploadedAt).toLocaleString()}</td>
                 <td>
-                  
-                    <a href={getDocumentDownloadUrl(doc.documentId)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument(doc.documentId, doc.originalFileName)}
                   >
                     Download
-                  </a>
+                  </button>
                 </td>
               </tr>
             ))}

@@ -15,9 +15,9 @@ import {
 import {
   type ClientDocument,
   getClientDocuments,
-  getDocumentDownloadUrl,
   uploadClientDocument,
 } from "../services/clientDocumentService";
+import { downloadDocument } from "../services/documentDownload";
 
 const ClientDetailPage = () => {
   const { id } = useParams();
@@ -318,13 +318,12 @@ const ClientDetailPage = () => {
                 <td>{(doc.fileSizeBytes / 1024).toFixed(1)} KB</td>
                 <td>{new Date(doc.uploadedAt).toLocaleString()}</td>
                 <td>
-                  <a
-                    href={getDocumentDownloadUrl(doc.documentId)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument(doc.documentId, doc.originalFileName)}
                   >
                     Download
-                  </a>
+                  </button>
                 </td>
               </tr>
             ))}

@@ -356,6 +356,38 @@ public class MatterService : IMatterService
         }).ToList();
     }
 
+    public async Task<MatterNoteDto> DeactivateMatterNoteAsync(int matterId, int noteId)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        var note = await _matterNoteRepository.GetByIdAsync(noteId);
+        if (note == null || note.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Note with id {noteId} was not found for matter {matterId}.");
+        }
+
+        note.IsActive = false;
+        note.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterNoteRepository.UpdateAsync(note);
+
+        return new MatterNoteDto
+        {
+            MatterNoteId = updated.MatterNoteId,
+            MatterId = updated.MatterId,
+            NoteTitle = updated.NoteTitle,
+            NoteContent = updated.NoteContent,
+            NoteType = updated.NoteType,
+            CreatedAt = updated.CreatedAt
+        };
+    }
+
     public async Task<MatterRelatedPartyDto> AddMatterRelatedPartyAsync(int matterId, CreateMatterRelatedPartyDto dto)
     {
         var matter = await _matterRepository.GetByIdAsync(matterId);
