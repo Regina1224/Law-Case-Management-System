@@ -19,4 +19,13 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Files managed by the shadcn/ui CLI: don't hand-edit these to satisfy
+    // the linter, since the CLI will just regenerate them.
+    files: ['src/components/ui/**/*.{ts,tsx}', 'src/hooks/use-mobile.ts'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
 ])
