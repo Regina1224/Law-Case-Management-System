@@ -8,24 +8,30 @@ export const useCurrentUser = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if(isAuthenticated == false)
-    {
-        setUser(null);
-        setLoading(false);
-        return;
+    if (!isAuthenticated) {
+      return;
     }
+
+    let cancelled = false;
 
     const fetchUser = async () => {
         try
         {
             const result = await getCurrentUser();
-            setUser(result);
+            if (!cancelled) setUser(result);
         } finally {
-            setLoading(false);
-        } 
+            if (!cancelled) setLoading(false);
+        }
     };
     fetchUser();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated]);
 
-  return { user, loading };
+  return {
+    user: isAuthenticated ? user : null,
+    loading: isAuthenticated ? loading : false,
+  };
 };
