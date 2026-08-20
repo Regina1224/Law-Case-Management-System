@@ -29,4 +29,11 @@ public class MatterNotesController : ControllerBase
         var result = await _matterService.AddMatterNoteAsync(matterId, dto);
         return Ok(ApiResponse<MatterNoteDto>.Ok(result));
     }
+
+    [HttpDelete("{noteId}")]
+    public async Task<IActionResult> DeleteNote(int matterId, int noteId)
+    {
+        var result = await _matterService.DeactivateMatterNoteAsync(matterId, noteId);
+        return Ok(ApiResponse<MatterNoteDto>.Ok(result));
+    }
 }
