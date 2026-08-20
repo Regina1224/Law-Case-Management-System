@@ -17,15 +17,27 @@ namespace LawFirm.Infrastructure.Repositories;
         public async Task<List<ClientNote>> GetByClientIdAsync(int clientId)
         {
             return await _dbContext.ClientNotes
-                .Where(n => n.ClientId == clientId)
+                .Where(n => n.ClientId == clientId && n.IsActive)
                 .OrderByDescending(n => n.CreatedAt)
                 .AsNoTracking()
                 .ToListAsync();
         }
 
+        public async Task<ClientNote?> GetByIdAsync(int id)
+        {
+            return await _dbContext.ClientNotes.FindAsync(id);
+        }
+
         public async Task<ClientNote> AddAsync(ClientNote note)
         {
             _dbContext.ClientNotes.Add(note);
+            await _dbContext.SaveChangesAsync();
+            return note;
+        }
+
+        public async Task<ClientNote> UpdateAsync(ClientNote note)
+        {
+            _dbContext.ClientNotes.Update(note);
             await _dbContext.SaveChangesAsync();
             return note;
         }
