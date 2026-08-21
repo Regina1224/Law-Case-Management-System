@@ -4,7 +4,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import {
   getIntakeById,
   updateIntake,
@@ -433,7 +433,18 @@ const IntakeDetailPage = () => {
       </div>
     );
   }
-  if (error && !intake) return <p className="text-sm text-destructive">{error}</p>;
+  if (error && !intake) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-16 text-center">
+        <AlertTriangle className="size-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button variant="outline" size="sm" onClick={() => navigate("/intakes")}>
+          <ArrowLeft />
+          Back to Intakes
+        </Button>
+      </div>
+    );
+  }
   if (!intake) return null;
 
   const isConverted = intake.status === "Converted";
@@ -453,8 +464,6 @@ const IntakeDetailPage = () => {
           <IntakeStatusBadge status={intake.status} />
         </div>
       </div>
-
-      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">

@@ -7,15 +7,18 @@ import { MsalProvider } from '@azure/msal-react'
 import { msalInstance } from './app/msalInstance'
 import { Toaster } from './components/ui/sonner'
 import { TooltipProvider } from './components/ui/tooltip'
+import { ThemeProvider } from './components/theme-provider'
 
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <MsalProvider instance={msalInstance}>
-      <TooltipProvider>
-        <RouterProvider router={router} />
-      </TooltipProvider>
-    </MsalProvider>
-    <Toaster />
+    <ThemeProvider defaultTheme="system" storageKey="lcms-theme">
+      <MsalProvider instance={msalInstance}>
+        <TooltipProvider>
+          <RouterProvider router={router} />
+        </TooltipProvider>
+      </MsalProvider>
+      <Toaster />
+    </ThemeProvider>
   </StrictMode>,
 )
