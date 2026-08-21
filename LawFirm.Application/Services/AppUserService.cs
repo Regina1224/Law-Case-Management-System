@@ -7,7 +7,7 @@ namespace LawFirm.Application.Services;
 
 public class AppUserService : IAppUserService
 {
-    private const string DefaultRoleForNewUsers = "SystemAdmin";
+    private const string DefaultRoleForNewUsers = "AdminStaff";
 
     private static readonly string[] AllowedRoles =
     [
