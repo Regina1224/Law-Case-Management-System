@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import {
   getIntakeById,
   updateIntake,
@@ -18,6 +23,123 @@ import { getClients, type ClientListItem } from "../services/clientService";
 import matterTypeService, {
   type MatterTypeDto,
 } from "../services/matterTypeService";
+import IntakeStatusBadge from "@/components/IntakeStatusBadge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+const INTAKE_STATUSES = [
+  "New",
+  "Under Review",
+  "Awaiting Information",
+  "Consultation Scheduled",
+  "Approved to Proceed",
+  "Declined",
+  "Converted",
+];
+
+const editIntakeSchema = z.object({
+  status: z.string().min(1, "Status is required."),
+  assignedReviewer: z.string().optional(),
+  practiceAreaId: z.coerce.number().min(1, "Practice area is required."),
+  urgency: z.string().optional(),
+  consultationDate: z.string().optional(),
+  legalIssueSummary: z.string().min(1, "Legal issue summary is required."),
+});
+type EditIntakeFormValues = z.input<typeof editIntakeSchema>;
+
+const convertSchema = z
+  .object({
+    clientMode: z.enum(["new", "existing"]),
+    existingClientId: z.coerce.number().optional(),
+    clientType: z.enum(["Individual", "Corporate"]),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    organizationName: z.string().optional(),
+    convertEmail: z.email("Invalid email address.").optional().or(z.literal("")),
+    convertPhone: z.string().optional(),
+    matterTitle: z.string().min(1, "Matter title is required."),
+    matterTypeId: z.coerce.number().min(1, "Matter type is required."),
+    responsibleLawyer: z.string().min(1, "Responsible lawyer is required."),
+    supportingStaff: z.string().optional(),
+    matterStatus: z.string().min(1),
+    priority: z.string().optional(),
+    openedDate: z.string().min(1, "Opened date is required."),
+    targetCloseDate: z.string().optional(),
+    isConfidential: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.clientMode === "existing") {
+      if (!data.existingClientId) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Please select a client.",
+          path: ["existingClientId"],
+        });
+      }
+      return;
+    }
+
+    if (data.clientType === "Individual") {
+      if (!data.firstName) {
+        ctx.addIssue({
+          code: "custom",
+          message: "First name is required.",
+          path: ["firstName"],
+        });
+      }
+      if (!data.lastName) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Last name is required.",
+          path: ["lastName"],
+        });
+      }
+    } else if (!data.organizationName) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Organization name is required.",
+        path: ["organizationName"],
+      });
+    }
+  });
+type ConvertFormValues = z.input<typeof convertSchema>;
+
+const uploadDocumentSchema = z.object({
+  file: z
+    .instanceof(FileList)
+    .refine((files) => files.length > 0, "File is required."),
+  documentCategory: z.string().min(1, "Category is required."),
+  description: z.string().optional(),
+});
+type UploadDocumentFormValues = z.infer<typeof uploadDocumentSchema>;
 
 const IntakeDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,50 +153,80 @@ const IntakeDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Edit form status
-  const [status, setStatus] = useState("");
-  const [assignedReviewer, setAssignedReviewer] = useState("");
-  const [practiceAreaId, setPracticeAreaId] = useState<number | "">("");
-  const [urgency, setUrgency] = useState("");
-  const [consultationDate, setConsultationDate] = useState("");
-  const [legalIssueSummary, setLegalIssueSummary] = useState("");
-  const [saving, setSaving] = useState(false);
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    control: editControl,
+    reset: resetEditForm,
+    getValues: getEditValues,
+    formState: { errors: editErrors, isSubmitting: saving },
+  } = useForm<EditIntakeFormValues>({
+    resolver: zodResolver(editIntakeSchema),
+    defaultValues: {
+      status: "",
+      assignedReviewer: "",
+      practiceAreaId: "" as unknown as number,
+      urgency: "",
+      consultationDate: "",
+      legalIssueSummary: "",
+    },
+  });
+  const [declining, setDeclining] = useState(false);
 
   // Document upload form status
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadCategory, setUploadCategory] = useState("Engagement Documents");
-  const [uploadDescription, setUploadDescription] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const {
+    register: registerUpload,
+    handleSubmit: handleSubmitUpload,
+    control: uploadControl,
+    reset: resetUploadForm,
+    formState: { errors: uploadErrors, isSubmitting: uploading },
+  } = useForm<UploadDocumentFormValues>({
+    resolver: zodResolver(uploadDocumentSchema),
+    defaultValues: {
+      documentCategory: "Engagement Documents",
+      description: "",
+    },
+  });
 
   // Convert to Client and Matter form status
   const [showConvertForm, setShowConvertForm] = useState(false);
-  const [converting, setConverting] = useState(false);
-  const [convertError, setConvertError] = useState<string | null>(null);
   const [convertResult, setConvertResult] = useState<ConvertIntakeResult | null>(null);
 
   const [clients, setClients] = useState<ClientListItem[]>([]);
   const [matterTypes, setMatterTypes] = useState<MatterTypeDto[]>([]);
   const [convertOptionsLoaded, setConvertOptionsLoaded] = useState(false);
 
-  const [clientMode, setClientMode] = useState<"new" | "existing">("new");
-  const [existingClientId, setExistingClientId] = useState<number | "">("");
-  const [clientType, setClientType] = useState("Individual");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [organizationName, setOrganizationName] = useState("");
-  const [convertEmail, setConvertEmail] = useState("");
-  const [convertPhone, setConvertPhone] = useState("");
+  const {
+    register: registerConvert,
+    handleSubmit: handleSubmitConvert,
+    control: convertControl,
+    reset: resetConvertForm,
+    formState: { errors: convertErrors, isSubmitting: converting },
+  } = useForm<ConvertFormValues>({
+    resolver: zodResolver(convertSchema),
+    defaultValues: {
+      clientMode: "new",
+      existingClientId: "" as unknown as number,
+      clientType: "Individual",
+      firstName: "",
+      lastName: "",
+      organizationName: "",
+      convertEmail: "",
+      convertPhone: "",
+      matterTitle: "",
+      matterTypeId: "" as unknown as number,
+      responsibleLawyer: "",
+      supportingStaff: "",
+      matterStatus: "Draft",
+      priority: "Medium",
+      openedDate: new Date().toISOString().slice(0, 10),
+      targetCloseDate: "",
+      isConfidential: false,
+    },
+  });
 
-  const [matterTitle, setMatterTitle] = useState("");
-  const [matterTypeId, setMatterTypeId] = useState<number | "">("");
-  const [responsibleLawyer, setResponsibleLawyer] = useState("");
-  const [supportingStaff, setSupportingStaff] = useState("");
-  const [matterStatus, setMatterStatus] = useState("Draft");
-  const [priority, setPriority] = useState("Medium");
-  const [openedDate, setOpenedDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
-  const [targetCloseDate, setTargetCloseDate] = useState("");
-  const [isConfidential, setIsConfidential] = useState(false);
+  const clientMode = useWatch({ control: convertControl, name: "clientMode" });
+  const clientType = useWatch({ control: convertControl, name: "clientType" });
 
   const fetchAll = async () => {
     setLoading(true);
@@ -90,14 +242,16 @@ const IntakeDetailPage = () => {
       setPracticeAreas(practiceAreaRes.data.data);
       setDocuments(documentsData);
 
-      setStatus(intakeData.status);
-      setAssignedReviewer(intakeData.assignedReviewer ?? "");
-      setPracticeAreaId(intakeData.practiceAreaId);
-      setUrgency(intakeData.urgency ?? "");
-      setConsultationDate(
-        intakeData.consultationDate ? intakeData.consultationDate.slice(0, 10) : ""
-      );
-      setLegalIssueSummary(intakeData.legalIssueSummary);
+      resetEditForm({
+        status: intakeData.status,
+        assignedReviewer: intakeData.assignedReviewer ?? "",
+        practiceAreaId: intakeData.practiceAreaId,
+        urgency: intakeData.urgency ?? "",
+        consultationDate: intakeData.consultationDate
+          ? intakeData.consultationDate.slice(0, 10)
+          : "",
+        legalIssueSummary: intakeData.legalIssueSummary,
+      });
     } catch {
       setError("Failed to load intake detail.");
     } finally {
@@ -111,81 +265,65 @@ const IntakeDetailPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intakeId]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!status || !practiceAreaId || !legalIssueSummary) {
-      setError("Please fill in all required fields.");
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
+  const onSubmitEdit = async (values: EditIntakeFormValues) => {
+    const parsed = editIntakeSchema.parse(values);
 
     try {
       const updated = await updateIntake(intakeId, {
-        status,
-        assignedReviewer: assignedReviewer || undefined,
-        practiceAreaId: Number(practiceAreaId),
-        urgency: urgency || undefined,
-        consultationDate: consultationDate || undefined,
-        legalIssueSummary,
+        status: parsed.status,
+        assignedReviewer: parsed.assignedReviewer || undefined,
+        practiceAreaId: parsed.practiceAreaId,
+        urgency: parsed.urgency || undefined,
+        consultationDate: parsed.consultationDate || undefined,
+        legalIssueSummary: parsed.legalIssueSummary,
       });
       setIntake(updated);
+      toast.success("Intake updated.");
     } catch {
-      setError("Failed to update intake.");
-    } finally {
-      setSaving(false);
+      toast.error("Failed to update intake.");
     }
   };
 
   const handleDecline = async () => {
-    setSaving(true);
-    setError(null);
+    const values = getEditValues();
+    setDeclining(true);
+
     try {
       const updated = await updateIntake(intakeId, {
         status: "Declined",
-        assignedReviewer: assignedReviewer || undefined,
-        practiceAreaId: Number(practiceAreaId),
-        urgency: urgency || undefined,
-        consultationDate: consultationDate || undefined,
-        legalIssueSummary,
+        assignedReviewer: values.assignedReviewer || undefined,
+        practiceAreaId: Number(values.practiceAreaId),
+        urgency: values.urgency || undefined,
+        consultationDate: values.consultationDate || undefined,
+        legalIssueSummary: values.legalIssueSummary,
       });
       setIntake(updated);
-      setStatus(updated.status);
+      resetEditForm({ ...values, status: updated.status });
+      toast.success("Intake declined.");
     } catch {
-      setError("Failed to decline intake.");
+      toast.error("Failed to decline intake.");
     } finally {
-      setSaving(false);
+      setDeclining(false);
     }
   };
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!uploadFile || !uploadCategory) {
-      setError("Please select a file and category.");
-      return;
-    }
-
-    setUploading(true);
-    setError(null);
-
+  const onSubmitUpload = async (values: UploadDocumentFormValues) => {
     try {
       await uploadIntakeDocument(
         intakeId,
-        uploadFile,
-        uploadCategory,
-        uploadDescription
+        values.file[0],
+        values.documentCategory,
+        values.description ?? ""
       );
       const refreshedDocs = await getIntakeDocuments(intakeId);
       setDocuments(refreshedDocs);
-      setUploadFile(null);
-      setUploadDescription("");
+      toast.success("Document uploaded.");
+      resetUploadForm({
+        documentCategory: "Engagement Documents",
+        description: "",
+      });
     } catch {
-      setError("Failed to upload document.");
-    } finally {
-      setUploading(false);
+      toast.error("Failed to upload document.");
     }
   };
 
@@ -194,16 +332,27 @@ const IntakeDetailPage = () => {
 
     // Naive split of "First Last" into first/last name to save typing; user can edit.
     const nameParts = intake.prospectiveClientName.trim().split(/\s+/);
-    setFirstName(nameParts.slice(0, -1).join(" ") || nameParts[0] || "");
-    setLastName(nameParts.length > 1 ? nameParts[nameParts.length - 1] : "");
-    setOrganizationName(intake.prospectiveClientName);
-    setClientType(intake.intendedClientType || "Individual");
-    setConvertEmail(intake.primaryEmail ?? "");
-    setConvertPhone(intake.primaryPhone ?? "");
-    setResponsibleLawyer(intake.assignedReviewer ?? "");
-    setPriority(intake.urgency ?? "Medium");
 
-    setConvertError(null);
+    resetConvertForm({
+      clientMode: "new",
+      existingClientId: "" as unknown as number,
+      clientType: (intake.intendedClientType as "Individual" | "Corporate") || "Individual",
+      firstName: nameParts.slice(0, -1).join(" ") || nameParts[0] || "",
+      lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : "",
+      organizationName: intake.prospectiveClientName,
+      convertEmail: intake.primaryEmail ?? "",
+      convertPhone: intake.primaryPhone ?? "",
+      matterTitle: "",
+      matterTypeId: "" as unknown as number,
+      responsibleLawyer: intake.assignedReviewer ?? "",
+      supportingStaff: "",
+      matterStatus: "Draft",
+      priority: intake.urgency ?? "Medium",
+      openedDate: new Date().toISOString().slice(0, 10),
+      targetCloseDate: "",
+      isConfidential: false,
+    });
+
     setShowConvertForm(true);
 
     if (!convertOptionsLoaded) {
@@ -216,481 +365,831 @@ const IntakeDetailPage = () => {
         setMatterTypes(matterTypesRes.data.data);
         setConvertOptionsLoaded(true);
       } catch {
-        setConvertError("Failed to load client/matter type options.");
+        toast.error("Failed to load client/matter type options.");
       }
     }
   };
 
-  const handleConvertSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setConvertError(null);
-
-    if (!matterTitle || !matterTypeId || !responsibleLawyer || !matterStatus || !openedDate) {
-      setConvertError("Please fill in all required matter fields.");
-      return;
-    }
-
-    if (clientMode === "existing") {
-      if (!existingClientId) {
-        setConvertError("Please select a client.");
-        return;
-      }
-    } else if (clientType === "Individual") {
-      if (!firstName || !lastName) {
-        setConvertError("First name and last name are required for individual client.");
-        return;
-      }
-    } else if (!organizationName) {
-      setConvertError("Organization name is required for corporate client.");
-      return;
-    }
-
-    setConverting(true);
+  const onSubmitConvert = async (values: ConvertFormValues) => {
+    const parsed = convertSchema.parse(values);
 
     try {
       const result = await convertIntake(intakeId, {
-        existingClientId: clientMode === "existing" ? Number(existingClientId) : undefined,
-        clientType: clientMode === "new" ? clientType : undefined,
-        firstName: clientMode === "new" && clientType === "Individual" ? firstName : undefined,
-        lastName: clientMode === "new" && clientType === "Individual" ? lastName : undefined,
+        existingClientId:
+          parsed.clientMode === "existing" ? parsed.existingClientId : undefined,
+        clientType: parsed.clientMode === "new" ? parsed.clientType : undefined,
+        firstName:
+          parsed.clientMode === "new" && parsed.clientType === "Individual"
+            ? parsed.firstName
+            : undefined,
+        lastName:
+          parsed.clientMode === "new" && parsed.clientType === "Individual"
+            ? parsed.lastName
+            : undefined,
         organizationName:
-          clientMode === "new" && clientType === "Corporate" ? organizationName : undefined,
-        email: clientMode === "new" ? convertEmail || undefined : undefined,
-        phone: clientMode === "new" ? convertPhone || undefined : undefined,
-        matterTitle,
-        matterTypeId: Number(matterTypeId),
-        responsibleLawyer,
-        supportingStaff: supportingStaff || undefined,
-        status: matterStatus,
-        priority: priority || undefined,
-        openedDate,
-        targetCloseDate: targetCloseDate || undefined,
-        isConfidential,
+          parsed.clientMode === "new" && parsed.clientType === "Corporate"
+            ? parsed.organizationName
+            : undefined,
+        email: parsed.clientMode === "new" ? parsed.convertEmail || undefined : undefined,
+        phone: parsed.clientMode === "new" ? parsed.convertPhone || undefined : undefined,
+        matterTitle: parsed.matterTitle,
+        matterTypeId: parsed.matterTypeId,
+        responsibleLawyer: parsed.responsibleLawyer,
+        supportingStaff: parsed.supportingStaff || undefined,
+        status: parsed.matterStatus,
+        priority: parsed.priority || undefined,
+        openedDate: parsed.openedDate,
+        targetCloseDate: parsed.targetCloseDate || undefined,
+        isConfidential: parsed.isConfidential,
       });
 
       setConvertResult(result);
       setShowConvertForm(false);
+      toast.success("Intake converted.");
 
       const refreshed = await getIntakeById(intakeId);
       setIntake(refreshed);
-      setStatus(refreshed.status);
+      resetEditForm({
+        status: refreshed.status,
+        assignedReviewer: refreshed.assignedReviewer ?? "",
+        practiceAreaId: refreshed.practiceAreaId,
+        urgency: refreshed.urgency ?? "",
+        consultationDate: refreshed.consultationDate
+          ? refreshed.consultationDate.slice(0, 10)
+          : "",
+        legalIssueSummary: refreshed.legalIssueSummary,
+      });
     } catch {
-      setConvertError("Failed to convert intake. Please check your input.");
-    } finally {
-      setConverting(false);
+      toast.error("Failed to convert intake. Please check your input.");
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error && !intake) return <div style={{ color: "red" }}>{error}</div>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+  if (error && !intake) return <p className="text-sm text-destructive">{error}</p>;
   if (!intake) return null;
 
   const isConverted = intake.status === "Converted";
+  const currentEditStatus = getEditValues("status");
 
   return (
-    <div>
-      <button onClick={() => navigate("/intakes")}>← Back to Intakes</button>
-      <h1>Intake Detail — {intake.intakeCode}</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <div className="space-y-6">
+      <div>
+        <Button variant="ghost" size="sm" onClick={() => navigate("/intakes")}>
+          <ArrowLeft />
+          Back to Intakes
+        </Button>
+        <div className="mt-2 flex items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Intake {intake.intakeCode}
+          </h1>
+          <IntakeStatusBadge status={intake.status} />
+        </div>
+      </div>
 
-      {/* Read-only summary area */}
-      <section>
-        <h2>Summary</h2>
-        <p>Prospective Client: {intake.prospectiveClientName}</p>
-        <p>Intended Client Type: {intake.intendedClientType ?? "-"}</p>
-        <p>Email: {intake.primaryEmail ?? "-"}</p>
-        <p>Phone: {intake.primaryPhone ?? "-"}</p>
-        <p>Source of Enquiry: {intake.sourceOfEnquiry ?? "-"}</p>
-        <p>Created At: {new Date(intake.createdAt).toLocaleString()}</p>
-      </section>
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {/* Editable area */}
-      <section>
-        <h2>Edit</h2>
-        <form onSubmit={handleSave}>
-          <div>
-            <label>Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              disabled={isConverted}
-            >
-              <option value="New">New</option>
-              <option value="Under Review">Under Review</option>
-              <option value="Awaiting Information">Awaiting Information</option>
-              <option value="Consultation Scheduled">Consultation Scheduled</option>
-              <option value="Approved to Proceed">Approved to Proceed</option>
-              <option value="Declined">Declined</option>
-              <option value="Converted">Converted</option>
-            </select>
-          </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                <div>
+                  <dt className="text-sm text-muted-foreground">
+                    Prospective Client
+                  </dt>
+                  <dd className="text-sm">{intake.prospectiveClientName}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">
+                    Intended Client Type
+                  </dt>
+                  <dd className="text-sm">{intake.intendedClientType ?? "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Email</dt>
+                  <dd className="text-sm">{intake.primaryEmail ?? "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Phone</dt>
+                  <dd className="text-sm">{intake.primaryPhone ?? "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">
+                    Source of Enquiry
+                  </dt>
+                  <dd className="text-sm">{intake.sourceOfEnquiry ?? "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Created At</dt>
+                  <dd className="text-sm">
+                    {new Date(intake.createdAt).toLocaleString()}
+                  </dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
 
-          <div>
-            <label>Assigned Reviewer</label>
-            <input
-              value={assignedReviewer}
-              onChange={(e) => setAssignedReviewer(e.target.value)}
-              disabled={isConverted}
-            />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Edit</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmitEdit(onSubmitEdit)}>
+                <FieldGroup>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field>
+                      <FieldLabel htmlFor="intakeStatus">Status</FieldLabel>
+                      <Controller
+                        control={editControl}
+                        name="status"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            disabled={isConverted}
+                          >
+                            <SelectTrigger id="intakeStatus" className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {INTAKE_STATUSES.map((s) => (
+                                <SelectItem key={s} value={s}>
+                                  {s}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </Field>
 
-          <div>
-            <label>Practice Area</label>
-            <select
-              value={practiceAreaId}
-              onChange={(e) =>
-                setPracticeAreaId(e.target.value ? Number(e.target.value) : "")
-              }
-              disabled={isConverted}
-            >
-              <option value="">-- Select Practice Area --</option>
-              {practiceAreas.map((pa) => (
-                <option key={pa.id} value={pa.id}>
-                  {pa.name}
-                </option>
-              ))}
-            </select>
-          </div>
+                    <Field>
+                      <FieldLabel htmlFor="assignedReviewer">
+                        Assigned Reviewer
+                      </FieldLabel>
+                      <Input
+                        id="assignedReviewer"
+                        disabled={isConverted}
+                        {...registerEdit("assignedReviewer")}
+                      />
+                    </Field>
 
-          <div>
-            <label>Urgency</label>
-            <select
-              value={urgency}
-              onChange={(e) => setUrgency(e.target.value)}
-              disabled={isConverted}
-            >
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-            </select>
-          </div>
+                    <Field>
+                      <FieldLabel htmlFor="editPracticeAreaId">
+                        Practice Area
+                      </FieldLabel>
+                      <Controller
+                        control={editControl}
+                        name="practiceAreaId"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value ? String(field.value) : ""}
+                            onValueChange={(value) => field.onChange(value ?? "")}
+                            disabled={isConverted}
+                          >
+                            <SelectTrigger
+                              id="editPracticeAreaId"
+                              className="w-full"
+                              aria-invalid={!!editErrors.practiceAreaId}
+                            >
+                              <SelectValue placeholder="Select practice area">
+                                {(value: string | null) =>
+                                  practiceAreas.find((pa) => String(pa.id) === value)
+                                    ?.name ?? "Select practice area"
+                                }
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {practiceAreas.map((pa) => (
+                                <SelectItem key={pa.id} value={String(pa.id)}>
+                                  {pa.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      <FieldError
+                        errors={
+                          editErrors.practiceAreaId ? [editErrors.practiceAreaId] : undefined
+                        }
+                      />
+                    </Field>
 
-          <div>
-            <label>Consultation Date</label>
-            <input
-              type="date"
-              value={consultationDate}
-              onChange={(e) => setConsultationDate(e.target.value)}
-              disabled={isConverted}
-            />
-          </div>
+                    <Field>
+                      <FieldLabel htmlFor="editUrgency">Urgency</FieldLabel>
+                      <Controller
+                        control={editControl}
+                        name="urgency"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value ?? ""}
+                            onValueChange={field.onChange}
+                            disabled={isConverted}
+                          >
+                            <SelectTrigger id="editUrgency" className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Low">Low</SelectItem>
+                              <SelectItem value="Medium">Medium</SelectItem>
+                              <SelectItem value="High">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </Field>
 
-          <div>
-            <label>Legal Issue Summary</label>
-            <textarea
-              value={legalIssueSummary}
-              onChange={(e) => setLegalIssueSummary(e.target.value)}
-              disabled={isConverted}
-            />
-          </div>
+                    <Field>
+                      <FieldLabel htmlFor="editConsultationDate">
+                        Consultation Date
+                      </FieldLabel>
+                      <Input
+                        id="editConsultationDate"
+                        type="date"
+                        disabled={isConverted}
+                        {...registerEdit("consultationDate")}
+                      />
+                    </Field>
+                  </div>
 
-          <button type="submit" disabled={saving || isConverted}>
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
+                  <Field>
+                    <FieldLabel htmlFor="editLegalIssueSummary">
+                      Legal Issue Summary
+                    </FieldLabel>
+                    <Textarea
+                      id="editLegalIssueSummary"
+                      disabled={isConverted}
+                      aria-invalid={!!editErrors.legalIssueSummary}
+                      {...registerEdit("legalIssueSummary")}
+                    />
+                    <FieldError
+                      errors={
+                        editErrors.legalIssueSummary
+                          ? [editErrors.legalIssueSummary]
+                          : undefined
+                      }
+                    />
+                  </Field>
 
-          <button
-            type="button"
-            onClick={handleDecline}
-            disabled={saving || isConverted || status === "Declined"}
-          >
-            Mark as Declined
-          </button>
-        </form>
-      </section>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleDecline}
+                      disabled={saving || declining || isConverted || currentEditStatus === "Declined"}
+                    >
+                      {declining ? "Declining..." : "Mark as Declined"}
+                    </Button>
+                    <Button type="submit" disabled={saving || isConverted}>
+                      {saving ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                </FieldGroup>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Convert to Client and Matter */}
-      <section>
-        <h2>Convert to Client and Matter</h2>
-
-        {isConverted ? (
-          <div>
-            <p>This intake has been converted.</p>
-            {convertResult ? (
-              <p>
-                Created client <strong>{convertResult.clientCode}</strong> and matter{" "}
-                <strong>{convertResult.matterNumber}</strong>.{" "}
-                <Link to={`/clients/${convertResult.clientId}`}>View Client</Link>{" "}
-                | <Link to="/matters">View Matters</Link>
+      <Card>
+        <CardHeader>
+          <CardTitle>Convert to Client and Matter</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isConverted ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                This intake has been converted.
               </p>
-            ) : (
-              intake.convertedClientId && (
-                <p>
-                  <Link to={`/clients/${intake.convertedClientId}`}>View Client</Link>{" "}
-                  | <Link to="/matters">View Matters</Link>
-                </p>
-              )
-            )}
-          </div>
-        ) : !showConvertForm ? (
-          <button type="button" onClick={openConvertForm}>
-            Convert to Client and Matter
-          </button>
-        ) : (
-          <form onSubmit={handleConvertSubmit}>
-            {convertError && <p style={{ color: "red" }}>{convertError}</p>}
-
-            <div>
-              <label>
-                <input
-                  type="radio"
-                  checked={clientMode === "new"}
-                  onChange={() => setClientMode("new")}
-                />
-                New Client
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  checked={clientMode === "existing"}
-                  onChange={() => setClientMode("existing")}
-                />
-                Existing Client
-              </label>
-            </div>
-
-            {clientMode === "existing" ? (
-              <div>
-                <label>Client</label>
-                <select
-                  value={existingClientId}
-                  onChange={(e) =>
-                    setExistingClientId(e.target.value ? Number(e.target.value) : "")
-                  }
-                >
-                  <option value="">-- Select Client --</option>
-                  {clients.map((c) => (
-                    <option key={c.clientId} value={c.clientId}>
-                      {c.clientName} ({c.clientCode})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <>
-                <div>
-                  <label>Client Type</label>
-                  <select
-                    value={clientType}
-                    onChange={(e) => setClientType(e.target.value)}
+              {convertResult ? (
+                <p className="text-sm">
+                  Created client <strong>{convertResult.clientCode}</strong> and
+                  matter <strong>{convertResult.matterNumber}</strong>.{" "}
+                  <Link
+                    to={`/clients/${convertResult.clientId}`}
+                    className="text-primary hover:underline"
                   >
-                    <option value="Individual">Individual</option>
-                    <option value="Corporate">Corporate</option>
-                  </select>
-                </div>
+                    View Client
+                  </Link>{" "}
+                  |{" "}
+                  <Link to="/matters" className="text-primary hover:underline">
+                    View Matters
+                  </Link>
+                </p>
+              ) : (
+                intake.convertedClientId && (
+                  <p className="text-sm">
+                    <Link
+                      to={`/clients/${intake.convertedClientId}`}
+                      className="text-primary hover:underline"
+                    >
+                      View Client
+                    </Link>{" "}
+                    |{" "}
+                    <Link to="/matters" className="text-primary hover:underline">
+                      View Matters
+                    </Link>
+                  </p>
+                )
+              )}
+            </div>
+          ) : !showConvertForm ? (
+            <Button type="button" onClick={openConvertForm}>
+              Convert to Client and Matter
+            </Button>
+          ) : (
+            <form onSubmit={handleSubmitConvert(onSubmitConvert)}>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel>Client</FieldLabel>
+                  <Controller
+                    control={convertControl}
+                    name="clientMode"
+                    render={({ field }) => (
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="flex gap-6"
+                      >
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="new" id="clientModeNew" />
+                          <Label htmlFor="clientModeNew" className="font-normal">
+                            New Client
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="existing" id="clientModeExisting" />
+                          <Label htmlFor="clientModeExisting" className="font-normal">
+                            Existing Client
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    )}
+                  />
+                </Field>
 
-                {clientType === "Individual" ? (
-                  <div>
-                    <label>First Name</label>
-                    <input
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
+                {clientMode === "existing" ? (
+                  <Field>
+                    <FieldLabel htmlFor="existingClientId">Client</FieldLabel>
+                    <Controller
+                      control={convertControl}
+                      name="existingClientId"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ? String(field.value) : ""}
+                          onValueChange={(value) => field.onChange(value ?? "")}
+                        >
+                          <SelectTrigger
+                            id="existingClientId"
+                            className="w-full"
+                            aria-invalid={!!convertErrors.existingClientId}
+                          >
+                            <SelectValue placeholder="Select client">
+                              {(value: string | null) => {
+                                const found = clients.find(
+                                  (c) => String(c.clientId) === value
+                                );
+                                return found
+                                  ? `${found.clientName} (${found.clientCode})`
+                                  : "Select client";
+                              }}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clients.map((c) => (
+                              <SelectItem key={c.clientId} value={String(c.clientId)}>
+                                {c.clientName} ({c.clientCode})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     />
-                    <label>Last Name</label>
-                    <input
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
+                    <FieldError
+                      errors={
+                        convertErrors.existingClientId
+                          ? [convertErrors.existingClientId]
+                          : undefined
+                      }
                     />
-                  </div>
+                  </Field>
                 ) : (
-                  <div>
-                    <label>Organization Name</label>
-                    <input
-                      value={organizationName}
-                      onChange={(e) => setOrganizationName(e.target.value)}
-                    />
-                  </div>
+                  <>
+                    <Field>
+                      <FieldLabel htmlFor="convertClientType">
+                        Client Type
+                      </FieldLabel>
+                      <Controller
+                        control={convertControl}
+                        name="clientType"
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="convertClientType" className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Individual">Individual</SelectItem>
+                              <SelectItem value="Corporate">Corporate</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </Field>
+
+                    {clientType === "Individual" ? (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <Field>
+                          <FieldLabel htmlFor="convertFirstName">
+                            First Name
+                          </FieldLabel>
+                          <Input
+                            id="convertFirstName"
+                            aria-invalid={!!convertErrors.firstName}
+                            {...registerConvert("firstName")}
+                          />
+                          <FieldError
+                            errors={
+                              convertErrors.firstName ? [convertErrors.firstName] : undefined
+                            }
+                          />
+                        </Field>
+                        <Field>
+                          <FieldLabel htmlFor="convertLastName">
+                            Last Name
+                          </FieldLabel>
+                          <Input
+                            id="convertLastName"
+                            aria-invalid={!!convertErrors.lastName}
+                            {...registerConvert("lastName")}
+                          />
+                          <FieldError
+                            errors={
+                              convertErrors.lastName ? [convertErrors.lastName] : undefined
+                            }
+                          />
+                        </Field>
+                      </div>
+                    ) : (
+                      <Field>
+                        <FieldLabel htmlFor="convertOrganizationName">
+                          Organization Name
+                        </FieldLabel>
+                        <Input
+                          id="convertOrganizationName"
+                          aria-invalid={!!convertErrors.organizationName}
+                          {...registerConvert("organizationName")}
+                        />
+                        <FieldError
+                          errors={
+                            convertErrors.organizationName
+                              ? [convertErrors.organizationName]
+                              : undefined
+                          }
+                        />
+                      </Field>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <Field>
+                        <FieldLabel htmlFor="convertEmail">Email</FieldLabel>
+                        <Input
+                          id="convertEmail"
+                          type="email"
+                          aria-invalid={!!convertErrors.convertEmail}
+                          {...registerConvert("convertEmail")}
+                        />
+                        <FieldError
+                          errors={
+                            convertErrors.convertEmail
+                              ? [convertErrors.convertEmail]
+                              : undefined
+                          }
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="convertPhone">Phone</FieldLabel>
+                        <Input id="convertPhone" {...registerConvert("convertPhone")} />
+                      </Field>
+                    </div>
+                  </>
                 )}
 
-                <div>
-                  <label>Email</label>
-                  <input
-                    value={convertEmail}
-                    onChange={(e) => setConvertEmail(e.target.value)}
-                  />
+                <Separator />
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="matterTitle">Matter Title</FieldLabel>
+                    <Input
+                      id="matterTitle"
+                      aria-invalid={!!convertErrors.matterTitle}
+                      {...registerConvert("matterTitle")}
+                    />
+                    <FieldError
+                      errors={
+                        convertErrors.matterTitle ? [convertErrors.matterTitle] : undefined
+                      }
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="matterTypeId">Matter Type</FieldLabel>
+                    <Controller
+                      control={convertControl}
+                      name="matterTypeId"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ? String(field.value) : ""}
+                          onValueChange={(value) => field.onChange(value ?? "")}
+                        >
+                          <SelectTrigger
+                            id="matterTypeId"
+                            className="w-full"
+                            aria-invalid={!!convertErrors.matterTypeId}
+                          >
+                            <SelectValue placeholder="Select matter type">
+                              {(value: string | null) =>
+                                matterTypes.find((mt) => String(mt.id) === value)
+                                  ?.name ?? "Select matter type"
+                              }
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {matterTypes.map((mt) => (
+                              <SelectItem key={mt.id} value={String(mt.id)}>
+                                {mt.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    <FieldError
+                      errors={
+                        convertErrors.matterTypeId ? [convertErrors.matterTypeId] : undefined
+                      }
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="convertResponsibleLawyer">
+                      Responsible Lawyer
+                    </FieldLabel>
+                    <Input
+                      id="convertResponsibleLawyer"
+                      aria-invalid={!!convertErrors.responsibleLawyer}
+                      {...registerConvert("responsibleLawyer")}
+                    />
+                    <FieldError
+                      errors={
+                        convertErrors.responsibleLawyer
+                          ? [convertErrors.responsibleLawyer]
+                          : undefined
+                      }
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="convertSupportingStaff">
+                      Supporting Staff
+                    </FieldLabel>
+                    <Input
+                      id="convertSupportingStaff"
+                      {...registerConvert("supportingStaff")}
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="matterStatus">Status</FieldLabel>
+                    <Controller
+                      control={convertControl}
+                      name="matterStatus"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger id="matterStatus" className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Draft">Draft</SelectItem>
+                            <SelectItem value="Open">Open</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="convertPriority">Priority</FieldLabel>
+                    <Controller
+                      control={convertControl}
+                      name="priority"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ?? ""}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger id="convertPriority" className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Low">Low</SelectItem>
+                            <SelectItem value="Medium">Medium</SelectItem>
+                            <SelectItem value="High">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="convertOpenedDate">
+                      Opened Date
+                    </FieldLabel>
+                    <Input
+                      id="convertOpenedDate"
+                      type="date"
+                      aria-invalid={!!convertErrors.openedDate}
+                      {...registerConvert("openedDate")}
+                    />
+                    <FieldError
+                      errors={
+                        convertErrors.openedDate ? [convertErrors.openedDate] : undefined
+                      }
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="convertTargetCloseDate">
+                      Target Close Date
+                    </FieldLabel>
+                    <Input
+                      id="convertTargetCloseDate"
+                      type="date"
+                      {...registerConvert("targetCloseDate")}
+                    />
+                  </Field>
                 </div>
 
-                <div>
-                  <label>Phone</label>
-                  <input
-                    value={convertPhone}
-                    onChange={(e) => setConvertPhone(e.target.value)}
+                <Field orientation="horizontal">
+                  <Controller
+                    control={convertControl}
+                    name="isConfidential"
+                    render={({ field }) => (
+                      <Checkbox
+                        id="isConfidential"
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                      />
+                    )}
                   />
-                </div>
-              </>
-            )}
+                  <FieldLabel htmlFor="isConfidential" className="font-normal">
+                    Confidential
+                  </FieldLabel>
+                </Field>
 
-            <div>
-              <label>Matter Title</label>
-              <input
-                value={matterTitle}
-                onChange={(e) => setMatterTitle(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label>Matter Type</label>
-              <select
-                value={matterTypeId}
-                onChange={(e) =>
-                  setMatterTypeId(e.target.value ? Number(e.target.value) : "")
-                }
-              >
-                <option value="">-- Select Matter Type --</option>
-                {matterTypes.map((mt) => (
-                  <option key={mt.id} value={mt.id}>
-                    {mt.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label>Responsible Lawyer</label>
-              <input
-                value={responsibleLawyer}
-                onChange={(e) => setResponsibleLawyer(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label>Supporting Staff</label>
-              <input
-                value={supportingStaff}
-                onChange={(e) => setSupportingStaff(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label>Status</label>
-              <select
-                value={matterStatus}
-                onChange={(e) => setMatterStatus(e.target.value)}
-              >
-                <option value="Draft">Draft</option>
-                <option value="Open">Open</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Priority</label>
-              <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Opened Date</label>
-              <input
-                type="date"
-                value={openedDate}
-                onChange={(e) => setOpenedDate(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label>Target Close Date</label>
-              <input
-                type="date"
-                value={targetCloseDate}
-                onChange={(e) => setTargetCloseDate(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={isConfidential}
-                  onChange={(e) => setIsConfidential(e.target.checked)}
-                />
-                Confidential
-              </label>
-            </div>
-
-            <button type="submit" disabled={converting}>
-              {converting ? "Converting..." : "Convert"}
-            </button>
-            <button type="button" onClick={() => setShowConvertForm(false)}>
-              Cancel
-            </button>
-          </form>
-        )}
-      </section>
-
-      {/* Doclument Area */}
-      <section>
-        <h2>Documents</h2>
-
-        <table>
-          <thead>
-            <tr>
-              <th>File Name</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Size</th>
-              <th>Uploaded At</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {documents.map((doc) => (
-              <tr key={doc.documentId}>
-                <td>{doc.originalFileName}</td>
-                <td>{doc.documentCategory}</td>
-                <td>{doc.description ?? "-"}</td>
-                <td>{(doc.fileSizeBytes / 1024).toFixed(1)} KB</td>
-                <td>{new Date(doc.uploadedAt).toLocaleString()}</td>
-                <td>
-                  <button
+                <div className="flex justify-end gap-2">
+                  <Button
                     type="button"
-                    onClick={() => downloadDocument(doc.documentId, doc.originalFileName)}
+                    variant="outline"
+                    onClick={() => setShowConvertForm(false)}
                   >
-                    Download
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={converting}>
+                    {converting ? "Converting..." : "Convert"}
+                  </Button>
+                </div>
+              </FieldGroup>
+            </form>
+          )}
+        </CardContent>
+      </Card>
 
-        <h3>Upload Document</h3>
-        <form onSubmit={handleUpload}>
-          <div>
-            <label>File</label>
-            <input
-              type="file"
-              onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
+      {/* Documents */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Documents</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {documents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No documents yet.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>File Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Size</TableHead>
+                    <TableHead>Uploaded At</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {documents.map((doc) => (
+                    <TableRow key={doc.documentId}>
+                      <TableCell>{doc.originalFileName}</TableCell>
+                      <TableCell>{doc.documentCategory}</TableCell>
+                      <TableCell>{doc.description ?? "-"}</TableCell>
+                      <TableCell>
+                        {(doc.fileSizeBytes / 1024).toFixed(1)} KB
+                      </TableCell>
+                      <TableCell>
+                        {new Date(doc.uploadedAt).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            downloadDocument(doc.documentId, doc.originalFileName)
+                          }
+                        >
+                          Download
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
-          <div>
-            <label>Category</label>
-            <select
-              value={uploadCategory}
-              onChange={(e) => setUploadCategory(e.target.value)}
-            >
-              <option value="Client ID">Client ID</option>
-              <option value="Engagement Documents">Engagement Documents</option>
-              <option value="Correspondence">Correspondence</option>
-              <option value="Internal Draft">Internal Draft</option>
-            </select>
-          </div>
-
-          <div>
-            <label>Description</label>
-            <input
-              value={uploadDescription}
-              onChange={(e) => setUploadDescription(e.target.value)}
-            />
-          </div>
-
-          <button type="submit" disabled={uploading}>
-            {uploading ? "Uploading..." : "Upload"}
-          </button>
-        </form>
-      </section>
+          <Separator />
+          <h3 className="text-sm font-medium">Upload Document</h3>
+          <form onSubmit={handleSubmitUpload(onSubmitUpload)}>
+            <FieldGroup>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="uploadFile">File</FieldLabel>
+                  <Input
+                    id="uploadFile"
+                    type="file"
+                    aria-invalid={!!uploadErrors.file}
+                    {...registerUpload("file")}
+                  />
+                  <FieldError
+                    errors={
+                      uploadErrors.file
+                        ? [{ message: uploadErrors.file.message }]
+                        : undefined
+                    }
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="uploadCategory">Category</FieldLabel>
+                  <Controller
+                    control={uploadControl}
+                    name="documentCategory"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger id="uploadCategory" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Client ID">Client ID</SelectItem>
+                          <SelectItem value="Engagement Documents">
+                            Engagement Documents
+                          </SelectItem>
+                          <SelectItem value="Correspondence">
+                            Correspondence
+                          </SelectItem>
+                          <SelectItem value="Internal Draft">
+                            Internal Draft
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </Field>
+              </div>
+              <Field>
+                <FieldLabel htmlFor="uploadDescription">Description</FieldLabel>
+                <Textarea id="uploadDescription" {...registerUpload("description")} />
+              </Field>
+              <div className="flex justify-end">
+                <Button type="submit" disabled={uploading}>
+                  {uploading ? "Uploading..." : "Upload"}
+                </Button>
+              </div>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
