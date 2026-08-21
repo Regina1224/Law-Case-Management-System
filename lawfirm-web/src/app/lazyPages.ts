@@ -1,0 +1,15 @@
+import { lazy } from "react"
+
+export const HomePage = lazy(() => import("../pages/HomePage"))
+export const ClientsPage = lazy(() => import("../pages/ClientsPage"))
+export const IntakesPage = lazy(() => import("../pages/IntakesPage"))
+export const MattersPage = lazy(() => import("../pages/MattersPage"))
+export const AdminPage = lazy(() => import("../pages/AdminPage"))
+export const AppUsersPage = lazy(() => import("../pages/AppUsersPage"))
+export const CreateClientPage = lazy(() => import("../pages/CreateClientPage"))
+export const ClientDetailPage = lazy(() => import("../pages/ClientDetailPage"))
+export const EditClientPage = lazy(() => import("../pages/EditClientPage"))
+export const CreateIntakePage = lazy(() => import("../pages/CreateIntakePage"))
+export const IntakeDetailPage = lazy(() => import("../pages/IntakeDetailPage"))
+export const CreateMatterPage = lazy(() => import("../pages/CreateMatterPage"))
+export const MatterDetailPage = lazy(() => import("../pages/MatterDetailPage"))

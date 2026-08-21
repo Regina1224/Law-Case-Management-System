@@ -4,7 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { getClientById, type ClientDetail } from "../services/clientService";
 import {
   createClientContact,
@@ -254,12 +254,23 @@ const ClientDetailPage = () => {
       </div>
     );
   }
-  if (error) return <p className="text-sm text-destructive">{error}</p>;
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-16 text-center">
+        <AlertTriangle className="size-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button variant="outline" size="sm" render={<Link to="/clients" />}>
+          <ArrowLeft />
+          Back to Clients
+        </Button>
+      </div>
+    );
+  }
   if (!client) return null;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Button variant="ghost" size="sm" render={<Link to="/clients" />}>
             <ArrowLeft />

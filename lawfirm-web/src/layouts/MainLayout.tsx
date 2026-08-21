@@ -1,10 +1,12 @@
+import { Suspense } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
-import { Scale, LayoutDashboard, Users, Inbox, Briefcase, ShieldCheck } from "lucide-react";
+import { InteractionStatus } from "@azure/msal-browser";
+import { Scale, LayoutDashboard, Users, Inbox, Briefcase, ShieldCheck, Loader2 } from "lucide-react";
 import AuthButton from "../components/AuthButton";
 import { useCurrentUser } from "../features/auth/useCurrentUser";
-import { loginRequest } from "../app/msalConfig";
-import { Button } from "@/components/ui/button";
+import LoginPage from "../pages/LoginPage";
+import { ModeToggle } from "@/components/mode-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -30,25 +32,24 @@ const NAV_ITEMS = [
 
 const MainLayout = () => {
   const isAuthenticated = useIsAuthenticated();
-  const { instance } = useMsal();
+  const { inProgress } = useMsal();
   const { user } = useCurrentUser();
   const location = useLocation();
 
-  const handleLogin = async () => {
-    await instance.loginRedirect(loginRequest);
-  };
-
-  if (!isAuthenticated) {
+  if (inProgress !== InteractionStatus.None) {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-muted/40">
         <div className="flex items-center gap-2 text-xl font-semibold">
           <Scale className="size-6 text-primary" />
           LCMS
         </div>
-        <p className="text-muted-foreground">Please sign in to continue.</p>
-        <Button onClick={handleLogin}>Sign in</Button>
+        <Loader2 className="size-5 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
   }
 
   const isActive = (to: string) =>
@@ -104,9 +105,20 @@ const MainLayout = () => {
           <span className="text-sm text-muted-foreground">
             {NAV_ITEMS.find((item) => isActive(item.to))?.label ?? "Admin"}
           </span>
+          <div className="ml-auto">
+            <ModeToggle />
+          </div>
         </header>
         <main className="flex-1 p-6">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </SidebarInset>
     </SidebarProvider>

@@ -4,7 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { ArrowLeft, Archive, ArchiveRestore, Trash2 } from "lucide-react";
+import { ArrowLeft, Archive, ArchiveRestore, Trash2, AlertTriangle } from "lucide-react";
 import {
   getMatterById,
   updateMatter,
@@ -700,7 +700,18 @@ const MatterDetailPage = () => {
       </div>
     );
   }
-  if (error) return <p className="text-sm text-destructive">{error}</p>;
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-16 text-center">
+        <AlertTriangle className="size-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button variant="outline" size="sm" render={<Link to="/matters" />}>
+          <ArrowLeft />
+          Back to Matters
+        </Button>
+      </div>
+    );
+  }
   if (!matter) return null;
 
   const isReadOnly = matter.status === "Closed" || matter.status === "Archived";
@@ -1640,7 +1651,7 @@ const MatterDetailPage = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           {deadlines.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No deadlines found.</p>
+            <p className="text-sm text-muted-foreground">No deadlines yet.</p>
           ) : (
             <div className="overflow-x-auto rounded-md border">
               <Table>

@@ -1,18 +1,20 @@
 import { createBrowserRouter } from "react-router-dom"
 import MainLayout from "../layouts/MainLayout"
-import HomePage from "../pages/HomePage"
-import ClientsPage from "../pages/ClientsPage"
-import IntakesPage from "../pages/IntakesPage"
-import MattersPage from "../pages/MattersPage"
-import AdminPage from "../pages/AdminPage"
-import AppUsersPage from "../pages/AppUsersPage"
-import CreateClientPage from "../pages/CreateClientPage"
-import ClientDetailPage from "../pages/ClientDetailPage"
-import EditClientPage from "../pages/EditClientPage"
-import CreateIntakePage from "../pages/CreateIntakePage"
-import IntakeDetailPage from "../pages/IntakeDetailPage"
-import CreateMatterPage from "../pages/CreateMatterPage"
-import MatterDetailPage from "../pages/MatterDetailPage"
+import {
+    HomePage,
+    ClientsPage,
+    IntakesPage,
+    MattersPage,
+    AdminPage,
+    AppUsersPage,
+    CreateClientPage,
+    ClientDetailPage,
+    EditClientPage,
+    CreateIntakePage,
+    IntakeDetailPage,
+    CreateMatterPage,
+    MatterDetailPage,
+} from "./lazyPages"
 
 const router = createBrowserRouter([
     {
