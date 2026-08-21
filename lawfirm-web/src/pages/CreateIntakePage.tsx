@@ -1,27 +1,73 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 import { createIntake } from "../services/intakeService";
 import practiceAreaService, {
   type PracticeAreaDto,
 } from "../services/practiceAreaService";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const createIntakeSchema = z.object({
+  prospectiveClientName: z.string().min(1, "Prospective client name is required."),
+  intendedClientType: z.string().min(1),
+  primaryEmail: z.email("Invalid email address.").optional().or(z.literal("")),
+  primaryPhone: z.string().optional(),
+  practiceAreaId: z.coerce.number().min(1, "Practice area is required."),
+  legalIssueSummary: z.string().min(1, "Legal issue summary is required."),
+  urgency: z.string().min(1),
+  assignedReviewer: z.string().optional(),
+  sourceOfEnquiry: z.string().optional(),
+  consultationDate: z.string().optional(),
+});
+
+type CreateIntakeFormValues = z.input<typeof createIntakeSchema>;
 
 const CreateIntakePage = () => {
   const navigate = useNavigate();
 
-  const [prospectiveClientName, setProspectiveClientName] = useState("");
-  const [intendedClientType, setIntendedClientType] = useState("Individual");
-  const [primaryEmail, setPrimaryEmail] = useState("");
-  const [primaryPhone, setPrimaryPhone] = useState("");
-  const [practiceAreaId, setPracticeAreaId] = useState<number | "">("");
-  const [legalIssueSummary, setLegalIssueSummary] = useState("");
-  const [urgency, setUrgency] = useState("Medium");
-  const [assignedReviewer, setAssignedReviewer] = useState("");
-  const [sourceOfEnquiry, setSourceOfEnquiry] = useState("");
-  const [consultationDate, setConsultationDate] = useState("");
-
   const [practiceAreas, setPracticeAreas] = useState<PracticeAreaDto[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateIntakeFormValues>({
+    resolver: zodResolver(createIntakeSchema),
+    defaultValues: {
+      prospectiveClientName: "",
+      intendedClientType: "Individual",
+      primaryEmail: "",
+      primaryPhone: "",
+      practiceAreaId: "" as unknown as number,
+      legalIssueSummary: "",
+      urgency: "Medium",
+      assignedReviewer: "",
+      sourceOfEnquiry: "",
+      consultationDate: "",
+    },
+  });
 
   useEffect(() => {
     const fetchPracticeAreas = async () => {
@@ -29,149 +75,223 @@ const CreateIntakePage = () => {
         const response = await practiceAreaService.getAll();
         setPracticeAreas(response.data.data);
       } catch {
-        setError("Failed to load practice areas.");
+        setLoadError("Failed to load practice areas.");
       }
     };
     fetchPracticeAreas();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!prospectiveClientName || !legalIssueSummary || !practiceAreaId) {
-      setError("Please fill in all required fields.");
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
+  const onSubmit = async (values: CreateIntakeFormValues) => {
+    const parsed = createIntakeSchema.parse(values);
 
     try {
       await createIntake({
-        prospectiveClientName,
-        intendedClientType,
-        primaryEmail: primaryEmail || undefined,
-        primaryPhone: primaryPhone || undefined,
-        practiceAreaId: Number(practiceAreaId),
-        legalIssueSummary,
-        urgency,
-        assignedReviewer: assignedReviewer || undefined,
-        sourceOfEnquiry: sourceOfEnquiry || undefined,
-        consultationDate: consultationDate || undefined,
+        prospectiveClientName: parsed.prospectiveClientName,
+        intendedClientType: parsed.intendedClientType,
+        primaryEmail: parsed.primaryEmail || undefined,
+        primaryPhone: parsed.primaryPhone || undefined,
+        practiceAreaId: parsed.practiceAreaId,
+        legalIssueSummary: parsed.legalIssueSummary,
+        urgency: parsed.urgency,
+        assignedReviewer: parsed.assignedReviewer || undefined,
+        sourceOfEnquiry: parsed.sourceOfEnquiry || undefined,
+        consultationDate: parsed.consultationDate || undefined,
       });
 
+      toast.success("Intake created.");
       navigate("/intakes");
     } catch {
-      setError("Failed to create intake. Please check your input.");
-    } finally {
-      setSubmitting(false);
+      toast.error("Failed to create intake. Please check your input.");
     }
   };
 
   return (
-    <div>
-      <h1>Create Intake</h1>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div>
+        <Button variant="ghost" size="sm" render={<Link to="/intakes" />}>
+          <ArrowLeft />
+          Back to Intakes
+        </Button>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+          Create Intake
+        </h1>
+      </div>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Prospective Client Name</label>
-          <input
-            value={prospectiveClientName}
-            onChange={(e) => setProspectiveClientName(e.target.value)}
-          />
-        </div>
+      {loadError && <p className="text-sm text-destructive">{loadError}</p>}
 
-        <div>
-          <label>Intended Client Type</label>
-          <select
-            value={intendedClientType}
-            onChange={(e) => setIntendedClientType(e.target.value)}
-          >
-            <option value="Individual">Individual</option>
-            <option value="Corporate">Corporate</option>
-          </select>
-        </div>
+      <Card>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <FieldGroup>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="prospectiveClientName">
+                    Prospective Client Name
+                  </FieldLabel>
+                  <Input
+                    id="prospectiveClientName"
+                    aria-invalid={!!errors.prospectiveClientName}
+                    {...register("prospectiveClientName")}
+                  />
+                  <FieldError
+                    errors={
+                      errors.prospectiveClientName
+                        ? [errors.prospectiveClientName]
+                        : undefined
+                    }
+                  />
+                </Field>
 
-        <div>
-          <label>Primary Email</label>
-          <input
-            value={primaryEmail}
-            onChange={(e) => setPrimaryEmail(e.target.value)}
-          />
-        </div>
+                <Field>
+                  <FieldLabel htmlFor="intendedClientType">
+                    Intended Client Type
+                  </FieldLabel>
+                  <Controller
+                    control={control}
+                    name="intendedClientType"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger id="intendedClientType" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Individual">Individual</SelectItem>
+                          <SelectItem value="Corporate">Corporate</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </Field>
 
-        <div>
-          <label>Primary Phone</label>
-          <input
-            value={primaryPhone}
-            onChange={(e) => setPrimaryPhone(e.target.value)}
-          />
-        </div>
+                <Field>
+                  <FieldLabel htmlFor="primaryEmail">Primary Email</FieldLabel>
+                  <Input
+                    id="primaryEmail"
+                    type="email"
+                    aria-invalid={!!errors.primaryEmail}
+                    {...register("primaryEmail")}
+                  />
+                  <FieldError
+                    errors={errors.primaryEmail ? [errors.primaryEmail] : undefined}
+                  />
+                </Field>
 
-        <div>
-          <label>Practice Area</label>
-          <select
-            value={practiceAreaId}
-            onChange={(e) =>
-              setPracticeAreaId(e.target.value ? Number(e.target.value) : "")
-            }
-          >
-            <option value="">-- Select Practice Area --</option>
-            {practiceAreas.map((pa) => (
-              <option key={pa.id} value={pa.id}>
-                {pa.name}
-              </option>
-            ))}
-          </select>
-        </div>
+                <Field>
+                  <FieldLabel htmlFor="primaryPhone">Primary Phone</FieldLabel>
+                  <Input id="primaryPhone" {...register("primaryPhone")} />
+                </Field>
 
-        <div>
-          <label>Legal Issue Summary</label>
-          <textarea
-            value={legalIssueSummary}
-            onChange={(e) => setLegalIssueSummary(e.target.value)}
-          />
-        </div>
+                <Field>
+                  <FieldLabel htmlFor="practiceAreaId">Practice Area</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="practiceAreaId"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value ? String(field.value) : ""}
+                        onValueChange={(value) => field.onChange(value ?? "")}
+                      >
+                        <SelectTrigger
+                          id="practiceAreaId"
+                          className="w-full"
+                          aria-invalid={!!errors.practiceAreaId}
+                        >
+                          <SelectValue placeholder="Select practice area">
+                            {(value: string | null) =>
+                              practiceAreas.find((pa) => String(pa.id) === value)
+                                ?.name ?? "Select practice area"
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {practiceAreas.map((pa) => (
+                            <SelectItem key={pa.id} value={String(pa.id)}>
+                              {pa.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  <FieldError
+                    errors={errors.practiceAreaId ? [errors.practiceAreaId] : undefined}
+                  />
+                </Field>
 
-        <div>
-          <label>Urgency</label>
-          <select value={urgency} onChange={(e) => setUrgency(e.target.value)}>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-        </div>
+                <Field>
+                  <FieldLabel htmlFor="urgency">Urgency</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="urgency"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger id="urgency" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low">Low</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </Field>
 
-        <div>
-          <label>Assigned Reviewer</label>
-          <input
-            value={assignedReviewer}
-            onChange={(e) => setAssignedReviewer(e.target.value)}
-          />
-        </div>
+                <Field>
+                  <FieldLabel htmlFor="assignedReviewer">
+                    Assigned Reviewer
+                  </FieldLabel>
+                  <Input id="assignedReviewer" {...register("assignedReviewer")} />
+                </Field>
 
-        <div>
-          <label>Source of Enquiry</label>
-          <input
-            value={sourceOfEnquiry}
-            onChange={(e) => setSourceOfEnquiry(e.target.value)}
-          />
-        </div>
+                <Field>
+                  <FieldLabel htmlFor="sourceOfEnquiry">
+                    Source of Enquiry
+                  </FieldLabel>
+                  <Input id="sourceOfEnquiry" {...register("sourceOfEnquiry")} />
+                </Field>
 
-        <div>
-          <label>Consultation Date</label>
-          <input
-            type="date"
-            value={consultationDate}
-            onChange={(e) => setConsultationDate(e.target.value)}
-          />
-        </div>
+                <Field>
+                  <FieldLabel htmlFor="consultationDate">
+                    Consultation Date
+                  </FieldLabel>
+                  <Input
+                    id="consultationDate"
+                    type="date"
+                    {...register("consultationDate")}
+                  />
+                </Field>
+              </div>
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Creating..." : "Create Intake"}
-        </button>
-      </form>
+              <Field>
+                <FieldLabel htmlFor="legalIssueSummary">
+                  Legal Issue Summary
+                </FieldLabel>
+                <Textarea
+                  id="legalIssueSummary"
+                  aria-invalid={!!errors.legalIssueSummary}
+                  {...register("legalIssueSummary")}
+                />
+                <FieldError
+                  errors={
+                    errors.legalIssueSummary ? [errors.legalIssueSummary] : undefined
+                  }
+                />
+              </Field>
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" render={<Link to="/intakes" />}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Creating..." : "Create Intake"}
+                </Button>
+              </div>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
