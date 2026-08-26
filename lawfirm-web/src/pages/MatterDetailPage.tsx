@@ -1134,7 +1134,7 @@ const MatterDetailPage = () => {
                       {!isReadOnly && (
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="destructive"
                           size="icon-sm"
                           aria-label="Delete note"
                           onClick={() => handleDeleteNote(note.matterNoteId)}
@@ -1267,7 +1267,7 @@ const MatterDetailPage = () => {
                               Edit
                             </Button>
                             <Button
-                              variant="ghost"
+                              variant="destructive"
                               size="sm"
                               onClick={() =>
                                 handleDeactivateParty(party.matterRelatedPartyId)

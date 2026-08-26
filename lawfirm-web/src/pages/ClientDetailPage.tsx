@@ -309,7 +309,14 @@ const ClientDetailPage = () => {
             <div className="sm:col-span-2">
               <dt className="text-sm text-muted-foreground">Address</dt>
               <dd className="text-sm">
-                {[client.addressLine1, client.city, client.state, client.postcode]
+                {[
+                  client.addressLine1,
+                  client.addressLine2,
+                  client.city,
+                  client.state,
+                  client.postcode,
+                  client.country,
+                ]
                   .filter(Boolean)
                   .join(", ") || "-"}
               </dd>
@@ -352,7 +359,7 @@ const ClientDetailPage = () => {
                       <TableCell className="text-right">
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="destructive"
                           size="sm"
                           onClick={() =>
                             handleDeactivateContact(contact.clientContactId)
@@ -448,7 +455,7 @@ const ClientDetailPage = () => {
                       {note.noteType && <Badge variant="outline">{note.noteType}</Badge>}
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="destructive"
                         size="icon-sm"
                         aria-label="Delete note"
                         onClick={() => handleDeleteNote(note.clientNoteId)}
