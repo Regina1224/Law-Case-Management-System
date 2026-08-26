@@ -6,6 +6,7 @@ export const msalConfig: Configuration = {
     clientId: 'fa69f7fc-53cd-403a-a7de-08154b078ed2', // LawFirm-Web 的 Client ID
     authority: 'https://login.microsoftonline.com/35e75bbb-9e41-4f12-b890-e17d83d4077e',
     redirectUri: 'http://localhost:5173',
+    postLogoutRedirectUri: 'http://localhost:5173',
   },
   cache: {
     cacheLocation: 'sessionStorage',

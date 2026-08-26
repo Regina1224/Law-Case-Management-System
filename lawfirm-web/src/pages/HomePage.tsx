@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, FolderOpen, Users, Inbox, ArrowRight } from "lucide-react";
+import {
+  Briefcase,
+  FolderOpen,
+  Users,
+  Inbox,
+  ArrowRight,
+  UserPlus,
+  FilePlus2,
+} from "lucide-react";
 import { getMatters, type MatterListItem } from "../services/matterService";
 import { getClients } from "../services/clientService";
 import { getIntakes, type IntakeListItem } from "../services/intakeService";
@@ -17,16 +25,60 @@ const PENDING_INTAKE_STATUSES = [
   "Awaiting Information",
 ];
 
+const MATTER_STATUS_ORDER = [
+  "Draft",
+  "Open",
+  "Awaiting Client Documents",
+  "In Progress",
+  "Awaiting External Response",
+  "On Hold",
+  "Closed",
+  "Archived",
+];
+
+const INTAKE_STATUS_ORDER = [
+  "New",
+  "Under Review",
+  "Awaiting Information",
+  "Consultation Scheduled",
+  "Approved to Proceed",
+  "Declined",
+  "Converted",
+];
+
 interface DashboardStats {
   totalMatters: number;
   openMatters: number;
   totalClients: number;
   pendingIntakes: number;
+  newClientsThisMonth: number;
+  newMattersThisMonth: number;
 }
+
+interface StatusCount {
+  status: string;
+  count: number;
+}
+
+const isThisMonth = (dateStr: string, startOfMonth: Date) =>
+  new Date(dateStr) >= startOfMonth;
+
+const countByStatus = (
+  items: { status: string }[],
+  order: string[]
+): StatusCount[] =>
+  order
+    .map((status) => ({
+      status,
+      count: items.filter((item) => item.status === status).length,
+    }))
+    .filter((entry) => entry.count > 0);
 
 const HomePage = () => {
   const { user } = useCurrentUser();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [matterStatusCounts, setMatterStatusCounts] = useState<StatusCount[]>([]);
+  const [intakeStatusCounts, setIntakeStatusCounts] = useState<StatusCount[]>([]);
   const [recentMatters, setRecentMatters] = useState<MatterListItem[]>([]);
   const [attentionIntakes, setAttentionIntakes] = useState<IntakeListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,9 +91,12 @@ const HomePage = () => {
       try {
         const [mattersResult, clientsResult, intakesResult] = await Promise.all([
           getMatters({ page: 1, pageSize: 200 }),
-          getClients({ page: 1, pageSize: 1 }),
+          getClients({ page: 1, pageSize: 200 }),
           getIntakes({ page: 1, pageSize: 200 }),
         ]);
+
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
         const openMatters = mattersResult.items.filter(
           (m) => !["Closed", "Archived"].includes(m.status)
@@ -49,13 +104,28 @@ const HomePage = () => {
         const pendingIntakes = intakesResult.items.filter((i) =>
           PENDING_INTAKE_STATUSES.includes(i.status)
         ).length;
+        const newClientsThisMonth = clientsResult.items.filter((c) =>
+          isThisMonth(c.createdAt, startOfMonth)
+        ).length;
+        const newMattersThisMonth = mattersResult.items.filter((m) =>
+          isThisMonth(m.openedDate, startOfMonth)
+        ).length;
 
         setStats({
           totalMatters: mattersResult.totalCount,
           openMatters,
           totalClients: clientsResult.totalCount,
           pendingIntakes,
+          newClientsThisMonth,
+          newMattersThisMonth,
         });
+
+        setMatterStatusCounts(
+          countByStatus(mattersResult.items, MATTER_STATUS_ORDER)
+        );
+        setIntakeStatusCounts(
+          countByStatus(intakesResult.items, INTAKE_STATUS_ORDER)
+        );
 
         setRecentMatters(
           [...mattersResult.items]
@@ -109,7 +179,22 @@ const HomePage = () => {
       icon: Inbox,
       to: "/intakes",
     },
+    {
+      label: "New Clients This Month",
+      value: stats?.newClientsThisMonth,
+      icon: UserPlus,
+      to: "/clients",
+    },
+    {
+      label: "New Matters This Month",
+      value: stats?.newMattersThisMonth,
+      icon: FilePlus2,
+      to: "/matters",
+    },
   ];
+
+  const matterStatusTotal = matterStatusCounts.reduce((sum, s) => sum + s.count, 0);
+  const intakeStatusTotal = intakeStatusCounts.reduce((sum, s) => sum + s.count, 0);
 
   return (
     <div className="space-y-6">
@@ -124,7 +209,7 @@ const HomePage = () => {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((card) => (
           <Card key={card.label} className="py-0">
             <CardContent className="px-0">
@@ -149,6 +234,76 @@ const HomePage = () => {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Matters by Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-full" />
+                ))}
+              </div>
+            ) : matterStatusCounts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No matters yet.</p>
+            ) : (
+              matterStatusCounts.map(({ status, count }) => (
+                <div key={status} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>{status}</span>
+                    <span className="text-muted-foreground">{count}</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted">
+                    <div
+                      className="h-2 rounded-full bg-primary"
+                      style={{
+                        width: `${(count / matterStatusTotal) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Intake Pipeline</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-full" />
+                ))}
+              </div>
+            ) : intakeStatusCounts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No intakes yet.</p>
+            ) : (
+              intakeStatusCounts.map(({ status, count }) => (
+                <div key={status} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>{status}</span>
+                    <span className="text-muted-foreground">{count}</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted">
+                    <div
+                      className="h-2 rounded-full bg-primary"
+                      style={{
+                        width: `${(count / intakeStatusTotal) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

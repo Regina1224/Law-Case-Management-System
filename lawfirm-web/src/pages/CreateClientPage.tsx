@@ -7,7 +7,9 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "../services/clientService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import {
   Field,
   FieldError,
@@ -30,6 +32,13 @@ const createClientSchema = z
     organizationName: z.string().optional(),
     email: z.email("Invalid email address.").optional().or(z.literal("")),
     phone: z.string().optional(),
+    addressLine1: z.string().optional(),
+    addressLine2: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    postcode: z.string().optional(),
+    country: z.string().optional(),
+    internalNotesSummary: z.string().optional(),
   })
   .refine((data) => data.clientType !== "Individual" || !!data.firstName, {
     message: "First name is required.",
@@ -65,6 +74,13 @@ const CreateClientPage = () => {
       organizationName: "",
       email: "",
       phone: "",
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      postcode: "",
+      country: "",
+      internalNotesSummary: "",
     },
   });
 
@@ -81,6 +97,13 @@ const CreateClientPage = () => {
           values.clientType === "Corporate" ? values.organizationName : undefined,
         email: values.email || undefined,
         phone: values.phone || undefined,
+        addressLine1: values.addressLine1 || undefined,
+        addressLine2: values.addressLine2 || undefined,
+        city: values.city || undefined,
+        state: values.state || undefined,
+        postcode: values.postcode || undefined,
+        country: values.country || undefined,
+        internalNotesSummary: values.internalNotesSummary || undefined,
       });
 
       toast.success("Client created.");
@@ -184,6 +207,49 @@ const CreateClientPage = () => {
                   <Input id="phone" {...register("phone")} />
                 </Field>
               </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="addressLine1">Address Line 1</FieldLabel>
+                  <Input id="addressLine1" {...register("addressLine1")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="addressLine2">Address Line 2</FieldLabel>
+                  <Input id="addressLine2" {...register("addressLine2")} />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Field>
+                  <FieldLabel htmlFor="city">City</FieldLabel>
+                  <Input id="city" {...register("city")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="state">State</FieldLabel>
+                  <Input id="state" {...register("state")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="postcode">Postcode</FieldLabel>
+                  <Input id="postcode" {...register("postcode")} />
+                </Field>
+              </div>
+
+              <Field>
+                <FieldLabel htmlFor="country">Country</FieldLabel>
+                <Input id="country" {...register("country")} />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="internalNotesSummary">
+                  Internal Notes Summary
+                </FieldLabel>
+                <Textarea
+                  id="internalNotesSummary"
+                  {...register("internalNotesSummary")}
+                />
+              </Field>
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" render={<Link to="/clients" />}>

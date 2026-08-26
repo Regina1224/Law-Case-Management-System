@@ -39,7 +39,9 @@ const AuthButton = () => {
   };
 
   const handleLogout = async () => {
-    await instance.logoutRedirect();
+    await instance.logoutRedirect({
+      postLogoutRedirectUri: window.location.origin,
+    });
   };
 
   if (!isLoggedIn) {

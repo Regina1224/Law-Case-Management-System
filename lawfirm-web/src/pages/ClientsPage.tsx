@@ -42,7 +42,7 @@ const ClientsPage = () => {
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const pageSize = 10;
 
   const fetchClients = async () => {
     setLoading(true);

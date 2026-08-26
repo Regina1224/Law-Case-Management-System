@@ -171,7 +171,7 @@ const AdminPage = () => {
                             Edit
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="destructive"
                             size="sm"
                             onClick={() => handleDelete(pa.id)}
                           >
