@@ -694,7 +694,10 @@ const IntakeDetailPage = () => {
                     View Client
                   </Link>{" "}
                   |{" "}
-                  <Link to="/matters" className="text-primary hover:underline">
+                  <Link
+                    to={`/matters/${convertResult.matterId}`}
+                    className="text-primary hover:underline"
+                  >
                     View Matters
                   </Link>
                 </p>
@@ -708,7 +711,10 @@ const IntakeDetailPage = () => {
                       View Client
                     </Link>{" "}
                     |{" "}
-                    <Link to="/matters" className="text-primary hover:underline">
+                    <Link
+                      to={`/matters/${intake.convertedMatterId}`}
+                      className="text-primary hover:underline"
+                    >
                       View Matters
                     </Link>
                   </p>
