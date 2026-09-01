@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../LawFirm.Domain/LawFirm.Domain.csproj" />
+    <ProjectReference Include="../LawFirm.Infrastructure/LawFirm.Infrastructure.csproj" />
+    <ProjectReference Include="../LawFirm.Shared/LawFirm.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="DTOs/Clients/" />
+    <Folder Include="DTOs/Documents/" />
+    <Folder Include="DTOs/Intakes/" />
+    <Folder Include="DTOs/ReferenceData/" />
+  </ItemGroup>
+
+  <ItemGroup>
+  <FrameworkReference Include="Microsoft.AspNetCore.App" />
+</ItemGroup>
+
+</Project>

@@ -1,0 +1,56 @@
+using LawFirm.Application.DTOs.Clients;
+using LawFirm.Application.Services.Interfaces;
+using LawFirm.Shared.Models;
+using Microsoft.AspNetCore.Mvc;
+
+
+namespace LawFirm.Api.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ClientsController : ControllerBase
+    {
+        private readonly IClientService _clientService;
+
+        public ClientsController(IClientService clientService)
+        {
+            _clientService = clientService;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetClients(
+            [FromQuery] string? keyword,
+            [FromQuery] string? clientType,
+            [FromQuery] string? status,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var result = await _clientService.GetClientsAsync(keyword, clientType, status, page, pageSize);
+
+            return Ok(ApiResponse<PagedResultDto<ClientListItemDto>>.Ok(result));
+            
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateClient([FromBody] CreateClientDto dto)
+        {
+            var result = await _clientService.CreateClientAsync(dto);
+            return Ok(ApiResponse<ClientListItemDto>.Ok(result));
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetClientById(int id)
+        {
+            var result = await _clientService.GetClientByIdAsync(id);
+            return Ok(ApiResponse<ClientDetailDto>.Ok(result));
+        }
+
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateClient(int id, [FromBody] UpdateClientDto dto)
+        {
+            var result = await _clientService.UpdateClientAsync(id, dto);
+            return Ok(ApiResponse<ClientDetailDto>.Ok(result));
+        }
+    }
+}

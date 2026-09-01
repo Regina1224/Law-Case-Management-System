@@ -1,0 +1,745 @@
+using LawFirm.Application.DTOs.Matters;
+using LawFirm.Application.Services.Interfaces;
+using LawFirm.Domain.Entities;
+using LawFirm.Infrastructure.Repositories.Interfaces;
+using LawFirm.Shared.Models;
+
+namespace LawFirm.Application.Services;
+
+public class MatterService : IMatterService
+{
+    private readonly IMatterRepository _matterRepository;
+    private readonly IClientRepository _clientRepository;
+    private readonly IMatterTypeRepository _matterTypeRepository;
+    private readonly IPracticeAreaRepository _practiceAreaRepository;
+    private readonly IMatterNoteRepository _matterNoteRepository;
+    private readonly IMatterRelatedPartyRepository _matterRelatedPartyRepository;
+    private readonly IMatterTaskRepository _matterTaskRepository;
+    private readonly IMatterDeadlineRepository _matterDeadlineRepository;
+
+    public MatterService(
+        IMatterRepository matterRepository,
+        IClientRepository clientRepository,
+        IMatterTypeRepository matterTypeRepository,
+        IPracticeAreaRepository practiceAreaRepository,
+        IMatterNoteRepository matterNoteRepository,
+        IMatterRelatedPartyRepository matterRelatedPartyRepository,
+        IMatterTaskRepository matterTaskRepository,
+        IMatterDeadlineRepository matterDeadlineRepository)
+    {
+        _matterRepository = matterRepository;
+        _clientRepository = clientRepository;
+        _matterTypeRepository = matterTypeRepository;
+        _practiceAreaRepository = practiceAreaRepository;
+        _matterNoteRepository = matterNoteRepository;
+        _matterRelatedPartyRepository = matterRelatedPartyRepository;
+        _matterTaskRepository = matterTaskRepository;
+        _matterDeadlineRepository = matterDeadlineRepository;
+    }
+
+    public async Task<PagedResultDto<MatterListItemDto>> GetMattersAsync(
+        string? keyword, string? status, int? practiceAreaId,
+        string? responsibleLawyer, int? matterTypeId,
+        int page, int pageSize)
+    {
+        var (items, totalCount) = await _matterRepository.GetFilteredAsync(
+            keyword, status, practiceAreaId, responsibleLawyer, matterTypeId, page, pageSize);
+
+        var dtoItems = items.Select(m => new MatterListItemDto
+        {
+            MatterId = m.MatterId,
+            MatterNumber = m.MatterNumber,
+            MatterTitle = m.MatterTitle,
+            ClientName = m.Client.ClientType == "Individual"
+                ? $"{m.Client.FirstName} {m.Client.LastName}".Trim()
+                : m.Client.OrganizationName ?? "",
+            MatterTypeName = m.MatterType.Name,
+            PracticeAreaName = m.PracticeArea.Name,
+            ResponsibleLawyer = m.ResponsibleLawyer,
+            Status = m.Status,
+            Priority = m.Priority,
+            OpenedDate = m.OpenedDate
+        }).ToList();
+
+        return new PagedResultDto<MatterListItemDto>
+        {
+            Items = dtoItems,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<MatterListItemDto> CreateMatterAsync(CreateMatterDto dto)
+    {
+        
+        if (string.IsNullOrWhiteSpace(dto.MatterTitle))
+        {
+            throw new ArgumentException("Matter title is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.ResponsibleLawyer))
+        {
+            throw new ArgumentException("Responsible lawyer is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Summary))
+        {
+            throw new ArgumentException("Matter summary is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Status))
+        {
+            throw new ArgumentException("Status is required.");
+        }
+
+        
+        var client = await _clientRepository.GetByIdAsync(dto.ClientId);
+        if (client == null)
+        {
+            throw new KeyNotFoundException($"Client with id {dto.ClientId} was not found.");
+        }
+
+        var matterType = await _matterTypeRepository.GetByIdAsync(dto.MatterTypeId);
+        if (matterType == null)
+        {
+            throw new KeyNotFoundException($"Matter type with id {dto.MatterTypeId} was not found.");
+        }
+
+        var practiceArea = await _practiceAreaRepository.GetByIdAsync(dto.PracticeAreaId);
+        if (practiceArea == null)
+        {
+            throw new KeyNotFoundException($"Practice area with id {dto.PracticeAreaId} was not found.");
+        }
+
+        
+        var totalCount = await _matterRepository.GetTotalCountAsync();
+        var matterNumber = $"MAT-{(totalCount + 1):D4}";
+
+        
+        var matter = new Matter
+        {
+            MatterNumber = matterNumber,
+            ClientId = dto.ClientId,
+            MatterTitle = dto.MatterTitle,
+            MatterTypeId = dto.MatterTypeId,
+            PracticeAreaId = dto.PracticeAreaId,
+            ResponsibleLawyer = dto.ResponsibleLawyer,
+            SupportingStaff = dto.SupportingStaff,
+            Status = dto.Status,
+            Priority = dto.Priority,
+            Summary = dto.Summary,
+            OpenedDate = dto.OpenedDate,
+            TargetCloseDate = dto.TargetCloseDate,
+            IsConfidential = dto.IsConfidential,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var saved = await _matterRepository.AddAsync(matter);
+
+        // 5. 映射返回（复用第 2 步已查出的对象，避免重复查询）
+        return new MatterListItemDto
+        {
+            MatterId = saved.MatterId,
+            MatterNumber = saved.MatterNumber,
+            MatterTitle = saved.MatterTitle,
+            ClientName = client.ClientType == "Individual"
+                ? $"{client.FirstName} {client.LastName}".Trim()
+                : client.OrganizationName ?? "",
+            MatterTypeName = matterType.Name,
+            PracticeAreaName = practiceArea.Name,
+            ResponsibleLawyer = saved.ResponsibleLawyer,
+            Status = saved.Status,
+            Priority = saved.Priority,
+            OpenedDate = saved.OpenedDate
+        };
+
+    }
+
+    public async Task<MatterDetailDto> GetMatterByIdAsync(int id)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        return MapToMatterDetailDto(matter);
+    }
+
+    public async Task<MatterDetailDto> UpdateMatterAsync(int id, UpdateMatterDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        if (string.IsNullOrWhiteSpace(dto.ResponsibleLawyer))
+        {
+            throw new ArgumentException("Responsible lawyer is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Status))
+        {
+            throw new ArgumentException("Status is required.");
+        }
+
+        matter.ResponsibleLawyer = dto.ResponsibleLawyer;
+        matter.SupportingStaff = dto.SupportingStaff;
+        matter.Status = dto.Status;
+        matter.Priority = dto.Priority;
+        matter.TargetCloseDate = dto.TargetCloseDate;
+        matter.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRepository.UpdateAsync(matter);
+
+        return MapToMatterDetailDto(updated);
+    }
+
+    public async Task<MatterDetailDto> CloseMatterAsync(int id, CloseMatterDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        if (matter.Status == "Closed")
+        {
+            throw new ArgumentException("This matter has already been closed.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.ClosureReason))
+        {
+            throw new ArgumentException("Closure reason is required.");
+        }
+
+        matter.Status = "Closed";
+        matter.ClosedDate = dto.ClosureDate;
+        matter.ClosureReason = dto.ClosureReason;
+        matter.ClosureNotes = dto.ClosureNotes;
+        matter.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRepository.UpdateAsync(matter);
+
+        return MapToMatterDetailDto(updated);
+    }
+
+    public async Task<MatterDetailDto> ArchiveMatterAsync(int id)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        if (matter.Status != "Closed")
+        {
+            throw new ArgumentException("Only closed matters can be archived.");
+        }
+
+        matter.Status = "Archived";
+        matter.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRepository.UpdateAsync(matter);
+
+        return MapToMatterDetailDto(updated);
+    }
+
+    public async Task<MatterDetailDto> UnarchiveMatterAsync(int id)
+    {
+        var matter = await _matterRepository.GetByIdAsync(id);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {id} was not found.");
+        }
+
+        if (matter.Status != "Archived")
+        {
+            throw new ArgumentException("Only archived matters can be unarchived.");
+        }
+
+        matter.Status = "Closed";
+        matter.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRepository.UpdateAsync(matter);
+
+        return MapToMatterDetailDto(updated);
+    }
+
+    private static void EnsureMatterIsNotClosed(Matter matter)
+    {
+        if (matter.Status == "Closed")
+        {
+            throw new ArgumentException("This matter is closed and cannot be modified.");
+        }
+    }
+
+    private static MatterDetailDto MapToMatterDetailDto(Matter matter)
+    {
+        return new MatterDetailDto
+        {
+            MatterId = matter.MatterId,
+            MatterNumber = matter.MatterNumber,
+            MatterTitle = matter.MatterTitle,
+            ClientId = matter.ClientId,
+            ClientCode = matter.Client.ClientCode,
+            ClientName = matter.Client.ClientType == "Individual"
+                ? $"{matter.Client.FirstName} {matter.Client.LastName}".Trim()
+                : matter.Client.OrganizationName ?? "",
+            MatterTypeId = matter.MatterTypeId,
+            MatterTypeName = matter.MatterType.Name,
+            PracticeAreaId = matter.PracticeAreaId,
+            PracticeAreaName = matter.PracticeArea.Name,
+            ResponsibleLawyer = matter.ResponsibleLawyer,
+            SupportingStaff = matter.SupportingStaff,
+            Status = matter.Status,
+            Priority = matter.Priority,
+            Summary = matter.Summary,
+            OpenedDate = matter.OpenedDate,
+            TargetCloseDate = matter.TargetCloseDate,
+            ClosedDate = matter.ClosedDate,
+            ClosureReason = matter.ClosureReason,
+            ClosureNotes = matter.ClosureNotes,
+            IsConfidential = matter.IsConfidential,
+            CreatedAt = matter.CreatedAt
+        };
+    }
+
+    public async Task<MatterNoteDto> AddMatterNoteAsync(int matterId, CreateMatterNoteDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        var note = new MatterNote
+        {
+            MatterId = matterId,
+            NoteTitle = dto.NoteTitle,
+            NoteContent = dto.NoteContent,
+            NoteType = dto.NoteType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var savedNote = await _matterNoteRepository.AddAsync(note);
+
+        return new MatterNoteDto
+        {
+            MatterNoteId = savedNote.MatterNoteId,
+            MatterId = savedNote.MatterId,
+            NoteTitle = savedNote.NoteTitle,
+            NoteContent = savedNote.NoteContent,
+            NoteType = savedNote.NoteType,
+            CreatedAt = savedNote.CreatedAt
+        };
+    }
+
+    public async Task<List<MatterNoteDto>> GetMatterNotesAsync(int matterId)
+    {
+        var notes = await _matterNoteRepository.GetByMatterIdAsync(matterId);
+
+        return notes.Select(n => new MatterNoteDto
+        {
+            MatterNoteId = n.MatterNoteId,
+            MatterId = n.MatterId,
+            NoteTitle = n.NoteTitle,
+            NoteContent = n.NoteContent,
+            NoteType = n.NoteType,
+            CreatedAt = n.CreatedAt
+        }).ToList();
+    }
+
+    public async Task<MatterNoteDto> DeactivateMatterNoteAsync(int matterId, int noteId)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        var note = await _matterNoteRepository.GetByIdAsync(noteId);
+        if (note == null || note.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Note with id {noteId} was not found for matter {matterId}.");
+        }
+
+        note.IsActive = false;
+        note.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterNoteRepository.UpdateAsync(note);
+
+        return new MatterNoteDto
+        {
+            MatterNoteId = updated.MatterNoteId,
+            MatterId = updated.MatterId,
+            NoteTitle = updated.NoteTitle,
+            NoteContent = updated.NoteContent,
+            NoteType = updated.NoteType,
+            CreatedAt = updated.CreatedAt
+        };
+    }
+
+    public async Task<MatterRelatedPartyDto> AddMatterRelatedPartyAsync(int matterId, CreateMatterRelatedPartyDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        var party = new MatterRelatedParty
+        {
+            MatterId = matterId,
+            PartyName = dto.PartyName,
+            PartyType = dto.PartyType,
+            Email = dto.Email,
+            Phone = dto.Phone,
+            Organization = dto.Organization,
+            Address = dto.Address,
+            Notes = dto.Notes,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var saved = await _matterRelatedPartyRepository.AddAsync(party);
+
+        return MapMatterRelatedPartyToDto(saved);
+    }
+
+    public async Task<List<MatterRelatedPartyDto>> GetMatterRelatedPartiesAsync(int matterId)
+    {
+        var parties = await _matterRelatedPartyRepository.GetByMatterIdAsync(matterId);
+
+        return parties.Select(MapMatterRelatedPartyToDto).ToList();
+    }
+
+    public async Task<MatterRelatedPartyDto> UpdateMatterRelatedPartyAsync(int matterId, int partyId, UpdateMatterRelatedPartyDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        var party = await _matterRelatedPartyRepository.GetByIdAsync(partyId);
+        if (party == null || party.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Related party with id {partyId} was not found for matter {matterId}.");
+        }
+
+        party.PartyName = dto.PartyName;
+        party.PartyType = dto.PartyType;
+        party.Email = dto.Email;
+        party.Phone = dto.Phone;
+        party.Organization = dto.Organization;
+        party.Address = dto.Address;
+        party.Notes = dto.Notes;
+        party.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRelatedPartyRepository.UpdateAsync(party);
+
+        return MapMatterRelatedPartyToDto(updated);
+    }
+
+    public async Task<MatterRelatedPartyDto> DeactivateMatterRelatedPartyAsync(int matterId, int partyId)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        var party = await _matterRelatedPartyRepository.GetByIdAsync(partyId);
+        if (party == null || party.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Related party with id {partyId} was not found for matter {matterId}.");
+        }
+
+        party.IsActive = false;
+        party.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterRelatedPartyRepository.UpdateAsync(party);
+
+        return MapMatterRelatedPartyToDto(updated);
+    }
+
+    private static MatterRelatedPartyDto MapMatterRelatedPartyToDto(MatterRelatedParty party)
+    {
+        return new MatterRelatedPartyDto
+        {
+            MatterRelatedPartyId = party.MatterRelatedPartyId,
+            MatterId = party.MatterId,
+            PartyName = party.PartyName,
+            PartyType = party.PartyType,
+            Email = party.Email,
+            Phone = party.Phone,
+            Organization = party.Organization,
+            Address = party.Address,
+            Notes = party.Notes,
+            CreatedAt = party.CreatedAt
+        };
+    }
+
+    public async Task<List<MatterTaskListItemDto>> GetMatterTasksAsync(
+        int matterId, string? status, string? assignedTo, string? priority)
+    {
+        var tasks = await _matterTaskRepository.GetFilteredAsync(matterId, status, assignedTo, priority);
+
+        return tasks.Select(t => new MatterTaskListItemDto
+        {
+            MatterTaskId = t.MatterTaskId,
+            MatterId = t.MatterId,
+            Title = t.Title,
+            Description = t.Description,
+            AssignedTo = t.AssignedTo,
+            Priority = t.Priority,
+            Status = t.Status,
+            DueDate = t.DueDate,
+            CreatedBy = t.CreatedBy,
+            CreatedAt = t.CreatedAt
+        }).ToList();
+    }
+
+    public async Task<MatterTaskListItemDto> AddMatterTaskAsync(int matterId, CreateMatterTaskDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            throw new ArgumentException("Task title is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.AssignedTo))
+        {
+            throw new ArgumentException("Assigned to is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Priority))
+        {
+            throw new ArgumentException("Priority is required.");
+        }
+
+        var task = new MatterTask
+        {
+            MatterId = matterId,
+            Title = dto.Title,
+            Description = dto.Description,
+            AssignedTo = dto.AssignedTo,
+            Priority = dto.Priority,
+            Status = "Not Started",
+            DueDate = dto.DueDate,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var saved = await _matterTaskRepository.AddAsync(task);
+
+        return new MatterTaskListItemDto
+        {
+            MatterTaskId = saved.MatterTaskId,
+            MatterId = saved.MatterId,
+            Title = saved.Title,
+            Description = saved.Description,
+            AssignedTo = saved.AssignedTo,
+            Priority = saved.Priority,
+            Status = saved.Status,
+            DueDate = saved.DueDate,
+            CreatedBy = saved.CreatedBy,
+            CreatedAt = saved.CreatedAt
+        };
+    }
+
+    public async Task<MatterTaskListItemDto> UpdateMatterTaskAsync(int matterId, int taskId, UpdateMatterTaskDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        var task = await _matterTaskRepository.GetByIdAsync(taskId);
+        if (task == null || task.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Task with id {taskId} was not found for matter {matterId}.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            throw new ArgumentException("Task title is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.AssignedTo))
+        {
+            throw new ArgumentException("Assigned to is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Priority))
+        {
+            throw new ArgumentException("Priority is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Status))
+        {
+            throw new ArgumentException("Status is required.");
+        }
+
+        task.Title = dto.Title;
+        task.Description = dto.Description;
+        task.AssignedTo = dto.AssignedTo;
+        task.Priority = dto.Priority;
+        task.Status = dto.Status;
+        task.DueDate = dto.DueDate;
+        task.CompletedDate = dto.Status == "Completed" ? (task.CompletedDate ?? DateTime.UtcNow) : null;
+        task.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterTaskRepository.UpdateAsync(task);
+
+        return new MatterTaskListItemDto
+        {
+            MatterTaskId = updated.MatterTaskId,
+            MatterId = updated.MatterId,
+            Title = updated.Title,
+            Description = updated.Description,
+            AssignedTo = updated.AssignedTo,
+            Priority = updated.Priority,
+            Status = updated.Status,
+            DueDate = updated.DueDate,
+            CreatedBy = updated.CreatedBy,
+            CreatedAt = updated.CreatedAt
+        };
+    }
+
+    public async Task<List<MatterDeadlineListItemDto>> GetMatterDeadlinesAsync(int matterId)
+    {
+        var deadlines = await _matterDeadlineRepository.GetByMatterIdAsync(matterId);
+
+        return deadlines.Select(d => new MatterDeadlineListItemDto
+        {
+            MatterDeadlineId = d.MatterDeadlineId,
+            MatterId = d.MatterId,
+            Title = d.Title,
+            DeadlineType = d.DeadlineType,
+            DueDateTime = d.DueDateTime,
+            ResponsiblePerson = d.ResponsiblePerson,
+            LocationOrCourt = d.LocationOrCourt,
+            Notes = d.Notes,
+            Status = d.Status
+        }).ToList();
+    }
+
+    public async Task<MatterDeadlineListItemDto> AddMatterDeadlineAsync(int matterId, CreateMatterDeadlineDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            throw new ArgumentException("Title is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.DeadlineType))
+        {
+            throw new ArgumentException("Deadline type is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.ResponsiblePerson))
+        {
+            throw new ArgumentException("Responsible person is required.");
+        }
+
+        var deadline = new MatterDeadline
+        {
+            MatterId = matterId,
+            Title = dto.Title,
+            DeadlineType = dto.DeadlineType,
+            DueDateTime = dto.DueDateTime,
+            ResponsiblePerson = dto.ResponsiblePerson,
+            LocationOrCourt = dto.LocationOrCourt,
+            Notes = dto.Notes,
+            Status = "Scheduled",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var saved = await _matterDeadlineRepository.AddAsync(deadline);
+
+        return new MatterDeadlineListItemDto
+        {
+            MatterDeadlineId = saved.MatterDeadlineId,
+            MatterId = saved.MatterId,
+            Title = saved.Title,
+            DeadlineType = saved.DeadlineType,
+            DueDateTime = saved.DueDateTime,
+            ResponsiblePerson = saved.ResponsiblePerson,
+            LocationOrCourt = saved.LocationOrCourt,
+            Notes = saved.Notes,
+            Status = saved.Status
+        };
+    }
+
+    public async Task<MatterDeadlineListItemDto> UpdateMatterDeadlineStatusAsync(int matterId, int deadlineId, UpdateMatterDeadlineStatusDto dto)
+    {
+        var matter = await _matterRepository.GetByIdAsync(matterId);
+        if (matter == null)
+        {
+            throw new KeyNotFoundException($"Matter with id {matterId} was not found.");
+        }
+
+        EnsureMatterIsNotClosed(matter);
+
+        var deadline = await _matterDeadlineRepository.GetByIdAsync(deadlineId);
+        if (deadline == null || deadline.MatterId != matterId)
+        {
+            throw new KeyNotFoundException($"Deadline with id {deadlineId} was not found for matter {matterId}.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Status))
+        {
+            throw new ArgumentException("Status is required.");
+        }
+
+        deadline.Status = dto.Status;
+        deadline.UpdatedAt = DateTime.UtcNow;
+
+        var updated = await _matterDeadlineRepository.UpdateAsync(deadline);
+
+        return new MatterDeadlineListItemDto
+        {
+            MatterDeadlineId = updated.MatterDeadlineId,
+            MatterId = updated.MatterId,
+            Title = updated.Title,
+            DeadlineType = updated.DeadlineType,
+            DueDateTime = updated.DueDateTime,
+            ResponsiblePerson = updated.ResponsiblePerson,
+            LocationOrCourt = updated.LocationOrCourt,
+            Notes = updated.Notes,
+            Status = updated.Status
+        };
+    }
+}

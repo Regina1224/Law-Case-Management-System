@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="LawFirm.Api/LawFirm.Api.csproj" />
+  <Project Path="LawFirm.Application/LawFirm.Application.csproj" />
+  <Project Path="LawFirm.Domain/LawFirm.Domain.csproj" />
+  <Project Path="LawFirm.Infrastructure/LawFirm.Infrastructure.csproj" />
+  <Project Path="LawFirm.Shared/LawFirm.Shared.csproj" />
+</Solution>
